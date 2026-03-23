@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block sidebar %}
+<li><a href="{{ url_for('admin_dashboard') }}" class="active">Dashboard</a></li>
+<li><a href="#">Manage Rooms</a></li>
+<li><a href="#">Manage Food Items</a></li>
+<li><a href="#">View Orders</a></li>
+<li><a href="#">View Complaints</a></li>
+<li><a href="#">Maintenance Requests</a></li>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-cards">
+    <div class="card">
+        <h3>Total Students</h3>
+        <p>150</p>
+    </div>
+    <div class="card">
+        <h3>Total Teachers</h3>
+        <p>15</p>
+    </div>
+    <div class="card">
+        <h3>Pending Complaints</h3>
+        <p>3</p>
+    </div>
+    <div class="card">
+        <h3>Maintenance Issues</h3>
+        <p>5</p>
+    </div>
+</div>
+{% endblock %}

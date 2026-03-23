@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block sidebar %}
+<li><a href="{{ url_for('teacher_dashboard') }}" class="active">Dashboard</a></li>
+<li><a href="#">My Assigned Rooms</a></li>
+<li><a href="#">Student Chat</a></li>
+<li><a href="#">Notices</a></li>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-cards">
+    <div class="card">
+        <h3>Assigned Rooms</h3>
+        <p>Room 101, 105</p>
+    </div>
+    <div class="card">
+        <h3>New Messages</h3>
+        <p>4</p>
+    </div>
+</div>
+{% endblock %}

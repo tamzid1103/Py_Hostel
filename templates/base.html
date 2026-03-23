@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA_Home - {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>NASA_Home</h2>
+        <ul>
+            {% block sidebar %}{% endblock %}
+            <li><a href="{{ url_for('logout') }}" class="text-danger">Logout</a></li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <header>
+            <div class="user-info">
+                Welcome, {{ session['full_name'] }} ({{ session['role'] }})
+            </div>
+        </header>
+
+        <div class="content">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <ul class="flashes">
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+
+</html>

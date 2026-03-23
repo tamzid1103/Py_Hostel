@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block sidebar %}
+<li><a href="{{ url_for('student_dashboard') }}" class="active">Dashboard</a></li>
+<li><a href="#">Order Food</a></li>
+<li><a href="#">My Orders</a></li>
+<li><a href="#">Payments</a></li>
+<li><a href="#">Room Booking</a></li>
+<li><a href="#">Complaints</a></li>
+<li><a href="#">Maintenance</a></li>
+<li><a href="#">Chat with Teacher</a></li>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-cards">
+    <div class="card">
+        <h3>My Room</h3>
+        <p>Room 101</p>
+    </div>
+    <div class="card">
+        <h3>Pending Dues</h3>
+        <p>$15.00</p>
+    </div>
+    <div class="card">
+        <h3>Recent Orders</h3>
+        <p>2</p>
+    </div>
+</div>
+{% endblock %}

@@ -18,6 +18,6 @@ the key points / features should be :
 
 8. build the interface nice and clean, may add some hovering animations. make it standard colour themed
 
-9. there will be a complaint option for the students, that will be visibl to the admins. students might complant as anonymous or woth theiir name and room no
+9. there will be a complaint option for the students, that will be visible to the admins. students might complant as anonymous or woth theiir name and room no
 
-10. there will be a reading roomm facility. there will a capacity of  100 students at a time. there will be hourly time slots. studednts will be able to book the reading room with their name and id. 
+10. there will be a reading roomm facility. there will be a capacity of 100 students at a time. there will be hourly time slots. studednts will be able to book the reading room with their name and id. (time baraite hobe + time sesh hoile sessiion end kora jabe jate new student dhukte pare)
