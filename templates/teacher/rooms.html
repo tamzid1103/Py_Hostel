@@ -6,7 +6,7 @@
 <li><a href="{{ url_for('teacher_dashboard') }}">Dashboard</a></li>
 <li><a href="{{ url_for('teacher_rooms') }}" class="active">Assigned Rooms</a></li>
 <li><a href="{{ url_for('teacher_complaints') }}">Room Complaints</a></li>
-<li><a href="#">Messages</a></li>
+<li><a href="{{ url_for('chat') }}">Messages</a></li>
 {% endblock %}
 
 {% block content %}

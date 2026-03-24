@@ -6,7 +6,7 @@
 <li><a href={{ url_for('teacher_dashboard') }} class=active>Dashboard</a></li>
 <li><a href={{ url_for('teacher_rooms') }}>Assigned Rooms</a></li>
 <li><a href={{ url_for('teacher_complaints') }}>Room Complaints</a></li>
-<li><a href=#>Messages</a></li>
+<li><a href="{{ url_for('chat') }}">Messages</a></li>
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,7 @@
         <p>Manage your designated hall rooms</p>
         <a href={{ url_for('teacher_rooms') }} style=color:white; text-decoration:underline;>View Rooms</a>
     </div>
-    
+
     <div style=background:#e74c3c; color:white; padding:20px; border-radius:8px; text-align:center;>
         <h3>Student Complaints</h3>
         <p>Review and address issues</p>

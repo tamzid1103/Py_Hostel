@@ -12,7 +12,7 @@ socketio = SocketIO(app)
 # Database connection details
 DB_HOST = 'localhost'
 DB_USER = 'root'
-DB_PASSWORD = 'alu potol'
+DB_PASSWORD = ''  # XAMPP default is empty
 DB_NAME = 'nasa_home'
 
 
@@ -43,12 +43,16 @@ def login():
     email = request.form['email']
     password = request.form['password']
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        'SELECT * FROM Users WHERE email = %s AND password = %s', (email, password))
-    user = cursor.fetchone()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT * FROM Users WHERE email = %s AND password = %s', (email, password))
+        user = cursor.fetchone()
+        conn.close()
+    except pymysql.err.OperationalError as e:
+        flash(f'Database connection error: {str(e)}')
+        return redirect(url_for('index'))
 
     if user:
         session['user_id'] = user['id']
@@ -705,6 +709,131 @@ def teacher_update_complaint(id):
     cursor.close()
     conn.close()
     return redirect(url_for('teacher_complaints'))
+
+
+@app.route('/student/reading_room', methods=['GET', 'POST'])
+def student_reading_room():
+    if session.get('role') != 'Student':
+        return redirect(url_for('index'))
+    student_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        booking_date = request.form['booking_date']
+        time_slot = request.form['time_slot']
+
+        try:
+            cursor.execute('''INSERT INTO Reading_Room_Bookings (student_id, booking_date, time_slot)
+                              VALUES (%s, %s, %s)''', (student_id, booking_date, time_slot))
+            conn.commit()
+            flash('Reading room booked successfully!')
+        except Exception as e:
+            flash('Slot already booked or invalid request.')
+            conn.rollback()
+        return redirect(url_for('student_reading_room'))
+
+    cursor.execute('''SELECT * FROM Reading_Room_Bookings 
+                      WHERE student_id=%s AND booking_date >= CURDATE()
+                      ORDER BY booking_date, time_slot''', (student_id,))
+    bookings = cursor.fetchall()
+    conn.close()
+    return render_template('student/reading_room.html', bookings=bookings)
+
+
+@app.route('/chat')
+def chat():
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if session['role'] == 'Student':
+        cursor.execute('''SELECT u.id, u.full_name as name, 'Teacher' as info
+                          FROM Users u
+                          JOIN Rooms r ON u.id = r.teacher_id
+                          JOIN Room_Assignments ra ON r.id = ra.room_id
+                          WHERE ra.student_id = %s''', (session['user_id'],))
+        contacts = cursor.fetchall()
+        base_tmpl = 'student/dashboard.html'
+    elif session['role'] == 'Teacher':
+        cursor.execute('''SELECT u.id, u.full_name as name, r.room_number as info
+                          FROM Users u
+                          JOIN Room_Assignments ra ON u.id = ra.student_id
+                          JOIN Rooms r ON ra.room_id = r.id
+                          WHERE r.teacher_id = %s''', (session['user_id'],))
+        contacts = cursor.fetchall()
+        base_tmpl = 'teacher/dashboard.html'
+    else:
+        contacts = []
+        base_tmpl = 'admin/dashboard.html'
+
+    cursor.close()
+    conn.close()
+
+    return render_template('chat.html', contacts=contacts, base_template=base_tmpl)
+
+
+@app.route('/api/chat/<int:receiver_id>')
+def get_chat_history(receiver_id):
+    if 'user_id' not in session:
+        return jsonify([])
+
+    sender_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''SELECT * FROM Chat_Messages 
+                      WHERE (sender_id = %s AND receiver_id = %s) 
+                         OR (sender_id = %s AND receiver_id = %s)
+                      ORDER BY sent_at ASC''',
+                   (sender_id, receiver_id, receiver_id, sender_id))
+    messages = cursor.fetchall()
+
+    # Convert datetime to string for JSON serialization
+    for m in messages:
+        m['sent_at'] = m['sent_at'].strftime('%Y-%m-%d %H:%M')
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(messages)
+
+
+@socketio.on('send_message')
+def handle_message(data):
+    sender_id = session.get('user_id')
+    if not sender_id:
+        return
+
+    receiver_id = data['receiver_id']
+    message = data['message']
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''INSERT INTO Chat_Messages (sender_id, receiver_id, message) 
+                      VALUES (%s, %s, %s)''', (sender_id, receiver_id, message))
+    conn.commit()
+    msg_id = cursor.lastrowid
+
+    cursor.execute('SELECT * FROM Chat_Messages WHERE id = %s', (msg_id,))
+    msg_data = cursor.fetchone()
+    msg_data['sent_at'] = msg_data['sent_at'].strftime('%Y-%m-%d %H:%M')
+
+    cursor.close()
+    conn.close()
+
+    # Send to the receiver's room and the sender's room
+    emit('receive_message', msg_data, room=f"user_{receiver_id}")
+    emit('receive_message', msg_data, room=f"user_{sender_id}")
+
+
+@socketio.on('join')
+def on_join(data):
+    if 'user_id' in session:
+        room = f"user_{session['user_id']}"
+        join_room(room)
 
 # Placeholder for modular routes like /admin/rooms, /student/meals, etc.
 
