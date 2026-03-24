@@ -12,7 +12,7 @@ socketio = SocketIO(app)
 # Database connection details
 DB_HOST = 'localhost'
 DB_USER = 'root'
-DB_PASSWORD = ''
+DB_PASSWORD = 'alu potol'
 DB_NAME = 'nasa_home'
 
 
