@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Room Complaints{% endblock %}
+
+{% block sidebar %}
+<li><a href="{{ url_for('teacher_dashboard') }}">Dashboard</a></li>
+<li><a href="{{ url_for('teacher_rooms') }}">Assigned Rooms</a></li>
+<li><a href="{{ url_for('teacher_complaints') }}" class="active">Room Complaints</a></li>
+<li><a href="#">Messages</a></li>
+{% endblock %}
+
+{% block content %}
+<h2>Complaints Received for Assigned Rooms</h2>
+
+<table style="width:100%; border-collapse: collapse; background:#fff; border-radius:8px; overflow:hidden;">
+    <thead style="background:#2c3e50; color:white;">
+        <tr>
+            <th style="padding:15px; text-align:left;">Date</th>
+            <th style="padding:15px; text-align:left;">Room</th>
+            <th style="padding:15px; text-align:left;">Student</th>
+            <th style="padding:15px; text-align:left;">Description</th>
+            <th style="padding:15px; text-align:center;">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in complaints %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:15px;">{{ c.created_at.strftime('%Y-%m-%d') }}</td>
+            <td style="padding:15px;">{{ c.room_number }}</td>
+            <td style="padding:15px;">
+                {% if c.is_anonymous %}
+                <span style="color:#7f8c8d; font-style:italic;">Anonymous</span>
+                {% else %}
+                {{ c.student_name }}
+                {% endif %}
+            </td>
+            <td style="padding:15px;">{{ c.description[:50] }}...</td>
+            <td style="padding:15px; text-align:center;">
+                {% if c.status == 'Pending' %}
+                <form action="{{ url_for('teacher_update_complaint', id=c.id) }}" method="POST">
+                    <button type="submit" class="btn" style="background:#27ae60;">Mark Reviewed</button>
+                </form>
+                {% else %}
+                <span style="color:#27ae60; font-weight:bold;">✓ Reviewed</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" style="padding:15px; text-align:center;">No complaints found for your rooms.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

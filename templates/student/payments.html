@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Payments{% endblock %}
+
+{% block sidebar %}
+<li><a href="{{ url_for('student_dashboard') }}">Dashboard</a></li>
+<li><a href="{{ url_for('student_order_food') }}">Order Food</a></li>
+<li><a href="{{ url_for('student_my_orders') }}">My Orders</a></li>
+<li><a href="{{ url_for('student_payments') }}" class="active">Payments</a></li>
+<li><a href="#">Room Booking</a></li>
+<li><a href="{{ url_for('student_complaints') }}">Complaints</a></li>
+<li><a href="{{ url_for('student_maintenance') }}">Maintenance</a></li>
+<li><a href="#">Chat with Teacher</a></li>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>My Payments</h2>
+    <div style="background:#e74c3c; color:white; padding:15px; border-radius:8px;">
+        <h3>Total Dues: ${{ "%.2f"|format(dues) }}</h3>
+    </div>
+</div>
+
+<table
+    style="width:100%; border-collapse: collapse; background:#fff; border-radius:8px; overflow:hidden; margin-top:20px;">
+    <thead style="background:#2c3e50; color:white;">
+        <tr>
+            <th style="padding:15px; text-align:left;">Date</th>
+            <th style="padding:15px; text-align:left;">Type</th>
+            <th style="padding:15px; text-align:left;">Amount</th>
+            <th style="padding:15px; text-align:left;">Status</th>
+            <th style="padding:15px; text-align:left;">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for payment in payments %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:15px;">{{ payment.payment_date.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td style="padding:15px;">{{ payment.payment_type }}</td>
+            <td style="padding:15px; font-weight:bold;">${{ "%.2f"|format(payment.amount) }}</td>
+            <td style="padding:15px;">
+                {% if payment.status == 'Pending' %}
+                <span
+                    style="background:#f39c12; color:white; padding:3px 8px; border-radius:12px; font-size:12px;">Pending</span>
+                {% else %}
+                <span
+                    style="background:#2ecc71; color:white; padding:3px 8px; border-radius:12px; font-size:12px;">Paid</span>
+                {% endif %}
+            </td>
+            <td style="padding:15px;">
+                {% if payment.status == 'Pending' %}
+                <a href="{{ url_for('pay_amount', id=payment.id) }}" class="btn"
+                    style="padding:5px 10px; font-size:12px; text-decoration:none;">Pay Now</a>
+                {% else %}
+                <a href="{{ url_for('download_receipt', id=payment.id) }}"
+                    style="color:#3498db; text-decoration:none;">📥 Download Receipt</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" style="padding:15px; text-align:center;">No payment records found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

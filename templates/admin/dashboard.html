@@ -4,8 +4,9 @@
 
 {% block sidebar %}
 <li><a href="{{ url_for('admin_dashboard') }}" class="active">Dashboard</a></li>
-<li><a href="#">Manage Rooms</a></li>
-<li><a href="#">Manage Food Items</a></li>
+<li><a href="{{ url_for('admin_rooms') }}">Manage Rooms</a></li>
+<li><a href="{{ url_for('admin_assignments') }}">Room Assignments</a></li>
+<li><a href="{{ url_for('admin_food') }}">Manage Food Items</a></li>
 <li><a href="#">View Orders</a></li>
 <li><a href="#">View Complaints</a></li>
 <li><a href="#">Maintenance Requests</a></li>
@@ -15,19 +16,19 @@
 <div class="dashboard-cards">
     <div class="card">
         <h3>Total Students</h3>
-        <p>150</p>
+        <p>{{ students_count }}</p>
     </div>
     <div class="card">
         <h3>Total Teachers</h3>
-        <p>15</p>
+        <p>{{ teachers_count }}</p>
     </div>
     <div class="card">
         <h3>Pending Complaints</h3>
-        <p>3</p>
+        <p>{{ complaints_count }}</p>
     </div>
     <div class="card">
         <h3>Maintenance Issues</h3>
-        <p>5</p>
+        <p>{{ maintenance_count }}</p>
     </div>
 </div>
 {% endblock %}

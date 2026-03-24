@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}View Orders{% endblock %}
+
+{% block sidebar %}
+<li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+<li><a href="{{ url_for('admin_rooms') }}">Manage Rooms</a></li>
+<li><a href="{{ url_for('admin_assignments') }}">Room Assignments</a></li>
+<li><a href="{{ url_for('admin_food') }}">Manage Food Items</a></li>
+<li><a href="{{ url_for('admin_orders') }}" class="active">View Orders</a></li>
+<li><a href="{{ url_for('admin_complaints') }}">View Complaints</a></li>
+<li><a href="{{ url_for('admin_maintenance') }}">Maintenance Requests</a></li>
+{% endblock %}
+
+{% block content %}
+<h2>All Student Orders</h2>
+
+<table
+    style="width:100%; border-collapse: collapse; background:#fff; border-radius:8px; overflow:hidden; margin-top:20px;">
+    <thead style="background:#2c3e50; color:white;">
+        <tr>
+            <th style="padding:15px; text-align:left;">Order ID</th>
+            <th style="padding:15px; text-align:left;">Student</th>
+            <th style="padding:15px; text-align:left;">Items</th>
+            <th style="padding:15px; text-align:left;">Total</th>
+            <th style="padding:15px; text-align:left;">Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:15px;">#{{ order.id }}</td>
+            <td style="padding:15px;">{{ order.student_name }}</td>
+            <td style="padding:15px;">{{ order.items }}</td>
+            <td style="padding:15px; font-weight:bold;">${{ order.total_amount }}</td>
+            <td style="padding:15px;">{{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" style="padding:15px; text-align:center;">No orders found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

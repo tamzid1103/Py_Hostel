@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Room Assignments{% endblock %}
+
+{% block sidebar %}
+<li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+<li><a href="{{ url_for('admin_rooms') }}">Manage Rooms</a></li>
+<li><a href="{{ url_for('admin_assignments') }}" class="active">Room Assignments</a></li>
+<li><a href="{{ url_for('admin_food') }}">Manage Food Items</a></li>
+<li><a href="#">View Orders</a></li>
+<li><a href="#">View Complaints</a></li>
+<li><a href="#">Maintenance Requests</a></li>
+{% endblock %}
+
+{% block content %}
+<h2>Room Assignments</h2>
+
+<div class="form-container" style="background:#fff; padding:20px; border-radius:8px; margin-bottom: 20px;">
+    <h3>Assign Student to Room</h3>
+    <form action="{{ url_for('admin_assignments') }}" method="POST"
+        style="display: flex; gap: 15px; align-items: flex-end;">
+        <div class="form-group" style="margin-bottom:0; flex:1;">
+            <label>Student</label>
+            <select name="student_id" required>
+                <option value="" disabled selected>Select Unassigned Student</option>
+                {% for student in unassigned_students %}
+                <option value="{{ student.id }}">{{ student.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0; flex:1;">
+            <label>Room</label>
+            <select name="room_id" required>
+                <option value="" disabled selected>Select Room</option>
+                {% for room in rooms %}
+                <option value="{{ room.id }}">Room {{ room.room_number }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn" style="width:auto; padding: 10px 20px;">Assign</button>
+    </form>
+</div>
+
+<table style="width:100%; border-collapse: collapse; background:#fff; border-radius:8px; overflow:hidden;">
+    <thead style="background:#2c3e50; color:white;">
+        <tr>
+            <th style="padding:15px; text-align:left;">Student Name</th>
+            <th style="padding:15px; text-align:left;">Assigned Room</th>
+            <th style="padding:15px; text-align:left;">Assigned Date</th>
+            <th style="padding:15px; text-align:left;">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for assignment in assignments %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:15px;">{{ assignment.full_name }}</td>
+            <td style="padding:15px;">Room {{ assignment.room_number }}</td>
+            <td style="padding:15px;">{{ assignment.assigned_date.strftime('%Y-%m-%d') }}</td>
+            <td style="padding:15px;">
+                <a href="{{ url_for('remove_assignment', id=assignment.id) }}" class="text-danger"
+                    style="text-decoration:none;" onclick="return confirm('Remove student from room?');">Remove</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" style="padding:15px; text-align:center;">No students assigned to rooms yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
