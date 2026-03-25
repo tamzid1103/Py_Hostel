@@ -26,9 +26,11 @@
                 <p style="font-size:14px; margin-bottom:10px;">
                     {% if food.category == 'Muslim' %}
                     <span style="background:#2ecc71; color:white; padding:3px 8px; border-radius:12px;">Muslim</span>
-                    {% else %}
+                    {% elif food.category == 'Non-Muslim' %}
                     <span
                         style="background:#f39c12; color:white; padding:3px 8px; border-radius:12px;">Non-Muslim</span>
+                    {% else %}
+                    <span style="background:#3498db; color:white; padding:3px 8px; border-radius:12px;">All</span>
                     {% endif %}
                 </p>
                 <p style="font-weight:bold; color:#e74c3c;">${{ food.price }}</p>

@@ -643,6 +643,11 @@ def download_receipt(id):
     # Needs wkhtmltopdf installed on system for pdfkit to work!
     # For demo purposes we can attempt to generate it or return HTML that looks like a PDF if not installed
     try:
+        # IMPORTANT: Replace the path below with the exact path where you installed wkhtmltopdf
+        # Usually it is something like r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+        path_wkhtmltopdf = r'D:\WKhtmltoPDF\wkhtmltopdf\bin\wkhtmltopdf.exe'
+        config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+
         pdf_options = {
             'page-size': 'A4',
             'margin-top': '0.75in',
@@ -650,7 +655,8 @@ def download_receipt(id):
             'margin-bottom': '0.75in',
             'margin-left': '0.75in',
         }
-        pdf = pdfkit.from_string(html, False, options=pdf_options)
+        pdf = pdfkit.from_string(
+            html, False, options=pdf_options, configuration=config)
 
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
