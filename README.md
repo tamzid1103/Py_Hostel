@@ -9,7 +9,7 @@ The Admin acts as the ultimate supervisor and manager of the hostel system.
 - **Role Registration:** Admins register via a secure, secret-key protected interface.
 - **Room Management:** Add, configure, and delete hostel rooms. Assign capacity limits and optional teachers to specific rooms.
 - **Student Assignments:** Handle allocating registered students to available rooms without exceeding capacity limits.
-- **Food Management:** Control the hostel's menu. Add food items categorically (Muslim, Non-Muslim, and All) with pricing.
+- **Food Management:** Control the hostel's menu. Add food items categorically (Veg and Non-Veg) with pricing.
 - **Oversight & Moderation:** 
   - Manage and review student complaints.
   - Review and update maintenance requests (Pending, In Progress, Resolved).
