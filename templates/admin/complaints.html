@@ -37,7 +37,19 @@
                 {{ complaint.full_name }} (Room {{ complaint.room_number }})
                 {% endif %}
             </td>
-            <td style="padding:15px;">{{ complaint.description }}</td>
+            <td style="padding:15px; max-width:300px;">
+                {% if complaint.description|length > 50 %}
+                <details>
+                    <summary style="cursor:pointer; color:#2980b9; font-weight:bold; outline:none;">Read Full Complaint
+                    </summary>
+                    <div
+                        style="margin-top:10px; padding:10px; background:#f8f9fa; border-left:3px solid #2980b9; font-size:14px; white-space: pre-wrap; word-wrap: break-word;">
+                        {{ complaint.description }}</div>
+                </details>
+                {% else %}
+                <span style="white-space: pre-wrap; word-wrap: break-word;">{{ complaint.description }}</span>
+                {% endif %}
+            </td>
             <td style="padding:15px;">
                 {% if complaint.status == 'Pending' %}
                 <span
