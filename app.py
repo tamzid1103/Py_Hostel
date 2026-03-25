@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response
+from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, jsonify
 from flask_socketio import SocketIO, emit, join_room
 import pymysql
 import pdfkit
@@ -12,7 +12,7 @@ socketio = SocketIO(app)
 # Database connection details
 DB_HOST = 'localhost'
 DB_USER = 'root'
-DB_PASSWORD = ''  # XAMPP default is empty
+DB_PASSWORD = 'alu potol'  # XAMPP default is empty
 DB_NAME = 'nasa_home'
 
 
@@ -584,17 +584,34 @@ def student_payments():
     return render_template('student/payments.html', payments=payments, dues=dues)
 
 
-@app.route('/student/payments/pay/<int:id>')
+@app.route('/student/payments/pay/<int:id>', methods=['POST'])
 def pay_amount(id):
     if session.get('role') != 'Student':
         return redirect(url_for('index'))
+
+    student_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
+
     cursor.execute(
-        "UPDATE Payments SET status='Paid' WHERE id=%s AND student_id=%s", (id, session['user_id']))
+        "SELECT status FROM Payments WHERE id=%s AND student_id=%s", (id, student_id))
+    payment = cursor.fetchone()
+
+    if not payment:
+        conn.close()
+        flash('Payment not found.')
+        return redirect(url_for('student_payments'))
+
+    if payment['status'] == 'Paid':
+        conn.close()
+        flash('This payment is already marked as paid.')
+        return redirect(url_for('student_payments'))
+
+    cursor.execute(
+        "UPDATE Payments SET status='Paid' WHERE id=%s AND student_id=%s", (id, student_id))
     conn.commit()
     conn.close()
-    flash('Payment successful!')
+    flash('Payment marked as paid (cash).')
     return redirect(url_for('student_payments'))
 
 

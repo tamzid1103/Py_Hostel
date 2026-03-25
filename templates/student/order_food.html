@@ -6,11 +6,11 @@
 <li><a href="{{ url_for('student_dashboard') }}">Dashboard</a></li>
 <li><a href="{{ url_for('student_order_food') }}" class="active">Order Food</a></li>
 <li><a href="{{ url_for('student_my_orders') }}">My Orders</a></li>
-<li><a href="#">Payments</a></li>
-<li><a href="#">Room Booking</a></li>
-<li><a href="#">Complaints</a></li>
-<li><a href="#">Maintenance</a></li>
-<li><a href="#">Chat with Teacher</a></li>
+<li><a href="{{ url_for('student_payments') }}">Payments</a></li>
+<li><a href="{{ url_for('student_reading_room') }}">Room Booking</a></li>
+<li><a href="{{ url_for('student_complaints') }}">Complaints</a></li>
+<li><a href="{{ url_for('student_maintenance') }}">Maintenance</a></li>
+<li><a href="{{ url_for('chat') }}">Chat with Teacher</a></li>
 {% endblock %}
 
 {% block content %}

@@ -6,11 +6,11 @@
 <li><a href="{{ url_for('student_dashboard') }}">Dashboard</a></li>
 <li><a href="{{ url_for('student_order_food') }}">Order Food</a></li>
 <li><a href="{{ url_for('student_my_orders') }}" class="active">My Orders</a></li>
-<li><a href="#">Payments</a></li>
-<li><a href="#">Room Booking</a></li>
-<li><a href="#">Complaints</a></li>
-<li><a href="#">Maintenance</a></li>
-<li><a href="#">Chat with Teacher</a></li>
+<li><a href="{{ url_for('student_payments') }}">Payments</a></li>
+<li><a href="{{ url_for('student_reading_room') }}">Room Booking</a></li>
+<li><a href="{{ url_for('student_complaints') }}">Complaints</a></li>
+<li><a href="{{ url_for('student_maintenance') }}">Maintenance</a></li>
+<li><a href="{{ url_for('chat') }}">Chat with Teacher</a></li>
 {% endblock %}
 
 {% block content %}
@@ -31,7 +31,7 @@
         <tr style="border-bottom:1px solid #eee;">
             <td style="padding:15px;">#{{ order.id }}</td>
             <td style="padding:15px;">{{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td style="padding:15px;">{{ order.items }}</td>
+            <td style="padding:15px;">{{ order['items'] }}</td>
             <td style="padding:15px; font-weight:bold;">${{ "%.2f"|format(order.total_amount) }}</td>
         </tr>
         {% else %}

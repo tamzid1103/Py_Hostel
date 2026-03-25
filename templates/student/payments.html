@@ -7,10 +7,10 @@
 <li><a href="{{ url_for('student_order_food') }}">Order Food</a></li>
 <li><a href="{{ url_for('student_my_orders') }}">My Orders</a></li>
 <li><a href="{{ url_for('student_payments') }}" class="active">Payments</a></li>
-<li><a href="#">Room Booking</a></li>
+<li><a href="{{ url_for('student_reading_room') }}">Room Booking</a></li>
 <li><a href="{{ url_for('student_complaints') }}">Complaints</a></li>
 <li><a href="{{ url_for('student_maintenance') }}">Maintenance</a></li>
-<li><a href="#">Chat with Teacher</a></li>
+<li><a href="{{ url_for('chat') }}">Chat with Teacher</a></li>
 {% endblock %}
 
 {% block content %}
@@ -49,8 +49,14 @@
             </td>
             <td style="padding:15px;">
                 {% if payment.status == 'Pending' %}
-                <a href="{{ url_for('pay_amount', id=payment.id) }}" class="btn"
-                    style="padding:5px 10px; font-size:12px; text-decoration:none;">Pay Now</a>
+                <form action="{{ url_for('pay_amount', id=payment.id) }}" method="POST"
+                    style="display:flex; align-items:center; gap:10px;">
+                    <label style="font-size:12px; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" name="paid_confirm" required>
+                        Paid (Cash)
+                    </label>
+                    <button type="submit" class="btn" style="padding:5px 10px; font-size:12px;">Confirm</button>
+                </form>
                 {% else %}
                 <a href="{{ url_for('download_receipt', id=payment.id) }}"
                     style="color:#3498db; text-decoration:none;">📥 Download Receipt</a>
