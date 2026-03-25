@@ -78,9 +78,15 @@ def register():
         password = request.form['password']
         role = request.form['role']
 
-        if role not in ['Student', 'Teacher']:
+        if role not in ['Admin', 'Student', 'Teacher']:
             flash('Invalid role selected')
             return redirect(url_for('register'))
+
+        if role == 'Admin':
+            admin_secret = request.form.get('admin_secret')
+            if admin_secret != 'secure@209':
+                flash('Invalid admin secret code!')
+                return redirect(url_for('register'))
 
         conn = get_db_connection()
         cursor = conn.cursor()
