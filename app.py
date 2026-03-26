@@ -1,29 +1,56 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, jsonify
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, jsonify, g
 from flask_socketio import SocketIO, emit, join_room
 import pymysql
 import pdfkit
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'nasa_home_secret_key'
+app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
 socketio = SocketIO(app)
 
 # Database connection details
-DB_HOST = 'localhost'
-DB_USER = 'root'
-DB_PASSWORD = 'alu potol'  # XAMPP default is empty
-DB_NAME = 'nasa_home'
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_USER = os.environ.get('DB_USER', 'root')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
+DB_NAME = os.environ.get('DB_NAME', 'nasa_home')
 
 
 def get_db_connection():
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        cursorclass=pymysql.cursors.DictCursor
-    )
+    if 'db' not in g:
+        g.db = pymysql.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor
+        )
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db(error):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
+
+def login_required(role=None):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                return redirect(url_for('index'))
+            if role and session.get('role') != role:
+                return redirect(url_for('index'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 
 @app.route('/')
@@ -46,21 +73,20 @@ def login():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            'SELECT * FROM Users WHERE email = %s AND password = %s', (email, password))
+        cursor.execute('SELECT * FROM Users WHERE email = %s', (email,))
         user = cursor.fetchone()
-        conn.close()
+        cursor.close()
     except pymysql.err.OperationalError as e:
-        flash(f'Database connection error: {str(e)}')
+        flash(f'Database connection error: {str(e)}', 'error')
         return redirect(url_for('index'))
 
-    if user:
+    if user and check_password_hash(user['password'], password):
         session['user_id'] = user['id']
         session['role'] = user['role']
         session['full_name'] = user['full_name']
         return redirect(url_for('index'))
     else:
-        flash('Invalid credentials')
+        flash('Invalid credentials', 'error')
         return redirect(url_for('index'))
 
 
@@ -84,8 +110,8 @@ def register():
 
         if role == 'Admin':
             admin_secret = request.form.get('admin_secret')
-            if admin_secret != 'secure@209':
-                flash('Invalid admin secret code!')
+            if admin_secret != os.environ.get('ADMIN_SECRET', 'secure@209'):
+                flash('Invalid admin secret code!', 'error')
                 return redirect(url_for('register'))
 
         conn = get_db_connection()
@@ -96,19 +122,22 @@ def register():
         existing_user = cursor.fetchone()
 
         if existing_user:
-            conn.close()
-            flash('Email already exists!')
+            cursor.close()
+            flash('Email already exists!', 'error')
             return redirect(url_for('register'))
+
+        # Hash password
+        hashed_password = generate_password_hash(password)
 
         # Insert user
         cursor.execute(
             'INSERT INTO Users (full_name, email, password, role) VALUES (%s, %s, %s, %s)',
-            (full_name, email, password, role)
+            (full_name, email, hashed_password, role)
         )
         conn.commit()
-        conn.close()
+        cursor.close()
 
-        flash('Registration successful! Please login.')
+        flash('Registration successful! Please login.', 'success')
         return redirect(url_for('index'))
 
     return render_template('register.html')
