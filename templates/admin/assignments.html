@@ -7,9 +7,9 @@
 <li><a href="{{ url_for('admin_rooms') }}">Manage Rooms</a></li>
 <li><a href="{{ url_for('admin_assignments') }}" class="active">Room Assignments</a></li>
 <li><a href="{{ url_for('admin_food') }}">Manage Food Items</a></li>
-<li><a href="#">View Orders</a></li>
-<li><a href="#">View Complaints</a></li>
-<li><a href="#">Maintenance Requests</a></li>
+<li><a href="{{ url_for('admin_orders') }}">View Orders</a></li>
+<li><a href="{{ url_for('admin_complaints') }}">View Complaints</a></li>
+<li><a href="{{ url_for('admin_maintenance') }}">Maintenance Requests</a></li>
 {% endblock %}
 
 {% block content %}
