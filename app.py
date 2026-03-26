@@ -419,6 +419,67 @@ def update_maintenance(id, status):
     return redirect(url_for('admin_maintenance'))
 
 
+# --- ADMIN FEES MANAGEMENT ---
+
+@app.route('/admin/fees', methods=['GET', 'POST'])
+def admin_fees():
+    if session.get('role') != 'Admin':
+        return redirect(url_for('index'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        student_id = request.form.get('student_id')
+        amount = request.form.get('amount')
+        due_date = request.form.get('due_date')
+
+        if not student_id or not amount or not due_date:
+            flash('All fields are required!', 'error')
+        else:
+            try:
+                cursor.execute(
+                    'INSERT INTO Hall_Fees (student_id, amount, due_date) VALUES (%s, %s, %s)',
+                    (student_id, amount, due_date)
+                )
+                conn.commit()
+                flash('Hall fee assigned successfully!', 'success')
+            except Exception as e:
+                flash(f'An error occurred: {str(e)}', 'error')
+        return redirect(url_for('admin_fees'))
+
+    # Get all students for the dropdown
+    cursor.execute(
+        "SELECT id, full_name, email FROM Users WHERE role='Student'")
+    students = cursor.fetchall()
+
+    # Get all fees
+    cursor.execute('''SELECT h.*, u.full_name as student_name 
+                      FROM Hall_Fees h
+                      JOIN Users u ON h.student_id = u.id
+                      ORDER BY h.due_date DESC''')
+    fees = cursor.fetchall()
+
+    cursor.close()
+
+    return render_template('admin/fees.html', students=students, fees=fees)
+
+
+@app.route('/admin/fees/delete/<int:id>', methods=['POST'])
+def delete_fee(id):
+    if session.get('role') != 'Admin':
+        return redirect(url_for('index'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM Hall_Fees WHERE id = %s', (id,))
+    conn.commit()
+    cursor.close()
+
+    flash('Hall fee removed.', 'success')
+    return redirect(url_for('admin_fees'))
+
+
 @app.route('/student')
 def student_dashboard():
     if session.get('role') != 'Student':
@@ -597,6 +658,65 @@ def student_maintenance():
     conn.close()
 
     return render_template('student/maintenance.html', requests=requests)
+
+
+# --- STUDENT FEES MANAGEMENT ---
+
+@app.route('/student/hall-fees')
+def student_hall_fees():
+    if session.get('role') != 'Student':
+        return redirect(url_for('index'))
+
+    student_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''SELECT * FROM Hall_Fees 
+                      WHERE student_id=%s 
+                      ORDER BY due_date DESC''', (student_id,))
+    fees = cursor.fetchall()
+
+    cursor.execute('''SELECT SUM(amount) as total_due 
+                      FROM Hall_Fees 
+                      WHERE student_id=%s AND status='Unpaid' ''', (student_id,))
+    total_due = cursor.fetchone()['total_due'] or 0.0
+
+    cursor.close()
+    return render_template('student/hall_fees.html', fees=fees, total_due=total_due)
+
+
+@app.route('/student/hall-fees/pay/<int:id>', methods=['POST'])
+def pay_hall_fee(id):
+    if session.get('role') != 'Student':
+        return redirect(url_for('index'))
+
+    student_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT status, amount FROM Hall_Fees WHERE id=%s AND student_id=%s", (id, student_id))
+    fee = cursor.fetchone()
+
+    if not fee:
+        flash('Fee record not found.', 'error')
+    elif fee['status'] == 'Paid':
+        flash('This fee is already paid.', 'info')
+    else:
+        # Mark the hall fee as paid
+        cursor.execute(
+            "UPDATE Hall_Fees SET status='Paid', paid_at=NOW() WHERE id=%s", (id,))
+
+        # Create a record in the main Payments table so receipt generation still works uniformly
+        cursor.execute(
+            "INSERT INTO Payments (student_id, amount, payment_type, status, payment_date) VALUES (%s, %s, 'Hall Fee', 'Paid', NOW())",
+            (student_id, fee['amount'])
+        )
+        conn.commit()
+        flash('Hall fee payment successful!', 'success')
+
+    cursor.close()
+    return redirect(url_for('student_hall_fees'))
 
 
 @app.route('/student/payments')
