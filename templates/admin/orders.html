@@ -31,7 +31,7 @@
         <tr style="border-bottom:1px solid #eee;">
             <td style="padding:15px;">#{{ order.id }}</td>
             <td style="padding:15px;">{{ order.student_name }}</td>
-            <td style="padding:15px;">{{ order.items }}</td>
+            <td style="padding:15px;">{{ order['items'] }}</td>
             <td style="padding:15px; font-weight:bold;">${{ order.total_amount }}</td>
             <td style="padding:15px;">{{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</td>
         </tr>
