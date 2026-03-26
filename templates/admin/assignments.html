@@ -3,13 +3,14 @@
 {% block title %}Room Assignments{% endblock %}
 
 {% block sidebar %}
-<li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
-<li><a href="{{ url_for('admin_rooms') }}">Manage Rooms</a></li>
-<li><a href="{{ url_for('admin_assignments') }}" class="active">Room Assignments</a></li>
-<li><a href="{{ url_for('admin_food') }}">Manage Food Items</a></li>
-<li><a href="{{ url_for('admin_orders') }}">View Orders</a></li>
-<li><a href="{{ url_for('admin_complaints') }}">View Complaints</a></li>
-<li><a href="{{ url_for('admin_maintenance') }}">Maintenance Requests</a></li>
+<li><a href="{{ url_for('admin_dashboard') }}" {% if request.endpoint == 'admin_dashboard' %}class="active"{% endif %}>Dashboard</a></li>
+<li><a href="{{ url_for('admin_rooms') }}" {% if request.endpoint == 'admin_rooms' %}class="active"{% endif %}>Manage Rooms</a></li>
+<li><a href="{{ url_for('admin_assignments') }}" {% if request.endpoint == 'admin_assignments' %}class="active"{% endif %}>Room Assignments</a></li>
+<li><a href="{{ url_for('admin_food') }}" {% if request.endpoint == 'admin_food' %}class="active"{% endif %}>Manage Food Items</a></li>
+<li><a href="{{ url_for('admin_orders') }}" {% if request.endpoint == 'admin_orders' %}class="active"{% endif %}>View Orders</a></li>
+<li><a href="{{ url_for('admin_complaints') }}" {% if request.endpoint == 'admin_complaints' %}class="active"{% endif %}>View Complaints</a></li>
+<li><a href="{{ url_for('admin_maintenance') }}" {% if request.endpoint == 'admin_maintenance' %}class="active"{% endif %}>Maintenance Requests</a></li>
+<li><a href="{{ url_for('admin_fees') }}" {% if request.endpoint == 'admin_fees' %}class="active"{% endif %}>Hall Fees</a></li>
 {% endblock %}
 
 {% block content %}

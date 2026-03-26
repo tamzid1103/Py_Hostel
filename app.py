@@ -496,12 +496,20 @@ def student_dashboard():
     room_data = cursor.fetchone()
     my_room = room_data['room_number'] if room_data else "Not Assigned"
 
-    # Get pending dues
+    # Get pending dues (meal payments + unpaid hall fees)
     cursor.execute(
         "SELECT SUM(amount) as pending_dues FROM Payments WHERE student_id=%s AND status='Pending'", (student_id,))
     dues_data = cursor.fetchone()
-    pending_dues = float(dues_data['pending_dues']
+    payment_dues = float(dues_data['pending_dues']
                          ) if dues_data['pending_dues'] else 0.00
+
+    cursor.execute(
+        "SELECT SUM(amount) as hall_dues FROM Hall_Fees WHERE student_id=%s AND status='Unpaid'", (student_id,))
+    hall_data = cursor.fetchone()
+    hall_dues = float(hall_data['hall_dues']
+                      ) if hall_data['hall_dues'] else 0.00
+
+    pending_dues = payment_dues + hall_dues
 
     # Get recent orders count
     cursor.execute(
