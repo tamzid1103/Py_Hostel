@@ -36,8 +36,11 @@ def get_db_connection():
 @app.teardown_appcontext
 def close_db(error):
     db = g.pop('db', None)
-    if db is not None:
-        db.close()
+    if db is not None and db.open:
+        try:
+            db.close()
+        except:
+            pass
 
 
 def login_required(role=None):

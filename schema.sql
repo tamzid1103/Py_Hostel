@@ -30,7 +30,7 @@ CREATE TABLE Room_Assignments (
 CREATE TABLE Food_Items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    category ENUM('Muslim', 'Non-Muslim') NOT NULL,
+    category ENUM('Non-Veg', 'Veg') NOT NULL,
     price DECIMAL(10, 2) NOT NULL
 );
 
@@ -121,10 +121,10 @@ INSERT INTO Users (email, password, role, full_name) VALUES
 ('teacher1@nasa.com', 'teacher123', 'Teacher', 'Mr. Smith');
 
 INSERT INTO Food_Items (name, category, price) VALUES 
-('Beef Curry', 'Muslim', 5.00),
-('Chicken Tikka', 'Muslim', 4.00),
-('Veg Biryani', 'Non-Muslim', 3.50),
-('Paneer Masala', 'Non-Muslim', 4.00);
+('Beef Curry', 'Non-Veg', 5.00),
+('Chicken Tikka', 'Non-Veg', 4.00),
+('Veg Biryani', 'Veg', 3.50),
+('Paneer Masala', 'Veg', 4.00);
 
 INSERT INTO Rooms (room_number, capacity, teacher_id) VALUES 
 ('101', 2, 3),
@@ -142,4 +142,5 @@ CREATE TABLE IF NOT EXISTS Hall_Fees (
     paid_at TIMESTAMP NULL,
     FOREIGN KEY (student_id) REFERENCES Users(id) ON DELETE CASCADE
 );
-
+
+
