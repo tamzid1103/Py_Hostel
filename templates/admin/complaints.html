@@ -3,14 +3,22 @@
 {% block title %}View Complaints{% endblock %}
 
 {% block sidebar %}
-<li><a href="{{ url_for('admin_dashboard') }}" {% if request.endpoint == 'admin_dashboard' %}class="active"{% endif %}>Dashboard</a></li>
-<li><a href="{{ url_for('admin_rooms') }}" {% if request.endpoint == 'admin_rooms' %}class="active"{% endif %}>Manage Rooms</a></li>
-<li><a href="{{ url_for('admin_assignments') }}" {% if request.endpoint == 'admin_assignments' %}class="active"{% endif %}>Room Assignments</a></li>
-<li><a href="{{ url_for('admin_food') }}" {% if request.endpoint == 'admin_food' %}class="active"{% endif %}>Manage Food Items</a></li>
-<li><a href="{{ url_for('admin_orders') }}" {% if request.endpoint == 'admin_orders' %}class="active"{% endif %}>View Orders</a></li>
-<li><a href="{{ url_for('admin_complaints') }}" {% if request.endpoint == 'admin_complaints' %}class="active"{% endif %}>View Complaints</a></li>
-<li><a href="{{ url_for('admin_maintenance') }}" {% if request.endpoint == 'admin_maintenance' %}class="active"{% endif %}>Maintenance Requests</a></li>
-<li><a href="{{ url_for('admin_fees') }}" {% if request.endpoint == 'admin_fees' %}class="active"{% endif %}>Hall Fees</a></li>
+<li><a href="{{ url_for('admin_dashboard') }}" {% if request.endpoint=='admin_dashboard' %}class="active" {% endif
+        %}>Dashboard</a></li>
+<li><a href="{{ url_for('admin_rooms') }}" {% if request.endpoint=='admin_rooms' %}class="active" {% endif %}>Manage
+        Rooms</a></li>
+<li><a href="{{ url_for('admin_assignments') }}" {% if request.endpoint=='admin_assignments' %}class="active" {% endif
+        %}>Room Assignments</a></li>
+<li><a href="{{ url_for('admin_food') }}" {% if request.endpoint=='admin_food' %}class="active" {% endif %}>Manage Food
+        Items</a></li>
+<li><a href="{{ url_for('admin_orders') }}" {% if request.endpoint=='admin_orders' %}class="active" {% endif %}>View
+        Orders</a></li>
+<li><a href="{{ url_for('admin_complaints') }}" {% if request.endpoint=='admin_complaints' %}class="active" {% endif
+        %}>View Complaints</a></li>
+<li><a href="{{ url_for('admin_maintenance') }}" {% if request.endpoint=='admin_maintenance' %}class="active" {% endif
+        %}>Maintenance Requests</a></li>
+<li><a href="{{ url_for('admin_fees') }}" {% if request.endpoint=='admin_fees' %}class="active" {% endif %}>Hall
+        Fees</a></li>
 {% endblock %}
 
 {% block content %}
@@ -62,8 +70,9 @@
             </td>
             <td style="padding:15px;">
                 {% if complaint.status == 'Pending' %}
-                <a href="{{ url_for('update_complaint', id=complaint.id) }}" class="btn"
-                    style="padding:5px 10px; font-size:12px; text-decoration:none;">Mark Reviewed</a>
+                <form action="{{ url_for('update_complaint', id=complaint.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn" style="padding:5px 10px; font-size:12px;">Mark Reviewed</button>
+                </form>
                 {% endif %}
             </td>
         </tr>

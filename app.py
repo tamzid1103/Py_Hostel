@@ -14,6 +14,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
 socketio = SocketIO(app)
 
+VALID_MAINTENANCE_STATUSES = ['Pending', 'In Progress', 'Resolved']
+
 # Database connection details
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
 DB_USER = os.environ.get('DB_USER', 'root')
@@ -87,6 +89,7 @@ def login():
         session['user_id'] = user['id']
         session['role'] = user['role']
         session['full_name'] = user['full_name']
+        flash('Login successful!', 'success')
         return redirect(url_for('index'))
     else:
         flash('Invalid credentials', 'error')
@@ -96,6 +99,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
+    flash('Logged out successfully.', 'success')
     return redirect(url_for('index'))
 
 
@@ -108,7 +112,7 @@ def register():
         role = request.form['role']
 
         if role not in ['Admin', 'Student', 'Teacher']:
-            flash('Invalid role selected')
+            flash('Invalid role selected', 'error')
             return redirect(url_for('register'))
 
         if role == 'Admin':
@@ -140,7 +144,7 @@ def register():
         conn.commit()
         cursor.close()
 
-        flash('Registration successful! Please login.', 'success')
+        flash(f'Successfully registered as {role}. Please login.', 'success')
         return redirect(url_for('index'))
 
     return render_template('register.html')
@@ -192,9 +196,12 @@ def admin_rooms():
             cursor.execute('INSERT INTO Rooms (room_number, capacity, teacher_id) VALUES (%s, %s, %s)',
                            (room_number, capacity, teacher_id))
             conn.commit()
-            flash('Room added successfully!')
+            flash('Room added successfully!', 'success')
+        except pymysql.err.IntegrityError:
+            flash(
+                f'Room {room_number} already exists. Please use a different room number.', 'error')
         except Exception as e:
-            flash(f'Error: {e}')
+            flash(f'Failed to add room: {e}', 'error')
         return redirect(url_for('admin_rooms'))
 
     cursor.execute('''SELECT r.*, u.full_name as teacher_name 
@@ -214,7 +221,7 @@ def admin_rooms():
     return render_template('admin/rooms.html', rooms=rooms, teachers=teachers, occupancy=occupancy)
 
 
-@app.route('/admin/rooms/delete/<int:id>')
+@app.route('/admin/rooms/delete/<int:id>', methods=['POST'])
 def delete_room(id):
     if session.get('role') != 'Admin':
         return redirect(url_for('index'))
@@ -223,7 +230,47 @@ def delete_room(id):
     cursor.execute('DELETE FROM Rooms WHERE id = %s', (id,))
     conn.commit()
     conn.close()
-    flash('Room deleted successfully!')
+    flash('Room deleted successfully!', 'success')
+    return redirect(url_for('admin_rooms'))
+
+
+@app.route('/admin/rooms/assign-teacher/<int:id>', methods=['POST'])
+def assign_room_teacher(id):
+    if session.get('role') != 'Admin':
+        return redirect(url_for('index'))
+
+    teacher_id = request.form.get('teacher_id')
+    if not teacher_id:
+        teacher_id = None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        if teacher_id is not None:
+            cursor.execute(
+                "SELECT id FROM Users WHERE id = %s AND role = 'Teacher'", (teacher_id,))
+            teacher = cursor.fetchone()
+            if not teacher:
+                flash('Selected user is not a valid teacher.', 'error')
+                return redirect(url_for('admin_rooms'))
+
+        cursor.execute(
+            'UPDATE Rooms SET teacher_id = %s WHERE id = %s', (teacher_id, id))
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            flash('Room not found.', 'error')
+        elif teacher_id is None:
+            flash('Teacher removed from room successfully.', 'success')
+        else:
+            flash('Teacher assigned to room successfully.', 'success')
+    except Exception as e:
+        conn.rollback()
+        flash(f'Failed to update room teacher: {e}', 'error')
+    finally:
+        cursor.close()
+        conn.close()
+
     return redirect(url_for('admin_rooms'))
 
 # --- ADMIN FOOD MANAGEMENT ---
@@ -244,9 +291,9 @@ def admin_food():
             cursor.execute('INSERT INTO Food_Items (name, category, price) VALUES (%s, %s, %s)',
                            (name, category, price))
             conn.commit()
-            flash('Food item added successfully!')
+            flash('Food item added successfully!', 'success')
         except Exception as e:
-            flash(f'Error: {e}')
+            flash(f'Failed to add food item: {e}', 'error')
         return redirect(url_for('admin_food'))
 
     cursor.execute('SELECT * FROM Food_Items')
@@ -255,7 +302,7 @@ def admin_food():
     return render_template('admin/food.html', foods=foods)
 
 
-@app.route('/admin/food/delete/<int:id>')
+@app.route('/admin/food/delete/<int:id>', methods=['POST'])
 def delete_food(id):
     if session.get('role') != 'Admin':
         return redirect(url_for('index'))
@@ -264,7 +311,7 @@ def delete_food(id):
     cursor.execute('DELETE FROM Food_Items WHERE id = %s', (id,))
     conn.commit()
     conn.close()
-    flash('Food item deleted successfully!')
+    flash('Food item deleted successfully!', 'success')
     return redirect(url_for('admin_food'))
 
 
@@ -289,19 +336,19 @@ def admin_assignments():
         count = cursor.fetchone()['count']
 
         if count >= capacity:
-            flash("Error: Room is full!")
+            flash("Room is full. Please choose another room.", 'error')
         else:
             # check if student already has a room
             cursor.execute(
                 "SELECT * FROM Room_Assignments WHERE student_id=%s", (student_id,))
             if cursor.fetchone():
-                flash("Error: Student already assigned to a room!")
+                flash("Student already assigned to a room.", 'error')
             else:
                 assigned_date = datetime.now().date()
                 cursor.execute("INSERT INTO Room_Assignments (student_id, room_id, assigned_date) VALUES (%s, %s, %s)",
                                (student_id, room_id, assigned_date))
                 conn.commit()
-                flash("Student assigned successfully!")
+                flash("Student assigned successfully!", 'success')
 
         return redirect(url_for('admin_assignments'))
 
@@ -328,7 +375,7 @@ def admin_assignments():
                            assignments=assignments)
 
 
-@app.route('/admin/assignments/remove/<int:id>')
+@app.route('/admin/assignments/remove/<int:id>', methods=['POST'])
 def remove_assignment(id):
     if session.get('role') != 'Admin':
         return redirect(url_for('index'))
@@ -337,7 +384,7 @@ def remove_assignment(id):
     cursor.execute('DELETE FROM Room_Assignments WHERE id = %s', (id,))
     conn.commit()
     conn.close()
-    flash('Student removed from room successfully!')
+    flash('Student removed from room successfully!', 'success')
     return redirect(url_for('admin_assignments'))
 
 # --- ADMIN ORDERS, COMPLAINTS, MAINTENANCE ---
@@ -378,7 +425,7 @@ def admin_complaints():
     return render_template('admin/complaints.html', complaints=complaints)
 
 
-@app.route('/admin/complaints/update/<int:id>')
+@app.route('/admin/complaints/update/<int:id>', methods=['POST'])
 def update_complaint(id):
     if session.get('role') != 'Admin':
         return redirect(url_for('index'))
@@ -388,6 +435,7 @@ def update_complaint(id):
         "UPDATE Complaints SET status='Reviewed' WHERE id=%s", (id,))
     conn.commit()
     conn.close()
+    flash('Complaint marked as reviewed.', 'success')
     return redirect(url_for('admin_complaints'))
 
 
@@ -407,11 +455,12 @@ def admin_maintenance():
     return render_template('admin/maintenance.html', requests=requests)
 
 
-@app.route('/admin/maintenance/update/<int:id>/<status>')
+@app.route('/admin/maintenance/update/<int:id>/<status>', methods=['POST'])
 def update_maintenance(id, status):
     if session.get('role') != 'Admin':
         return redirect(url_for('index'))
-    if status not in ['Pending', 'In Progress', 'Resolved']:
+    if status not in VALID_MAINTENANCE_STATUSES:
+        flash('Invalid maintenance status.', 'error')
         return redirect(url_for('admin_maintenance'))
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -419,6 +468,7 @@ def update_maintenance(id, status):
         "UPDATE Maintenance_Requests SET status=%s WHERE id=%s", (status, id))
     conn.commit()
     conn.close()
+    flash(f'Maintenance request updated to {status}.', 'success')
     return redirect(url_for('admin_maintenance'))
 
 
@@ -539,26 +589,43 @@ def student_order_food():
     cursor = conn.cursor()
 
     if request.method == 'POST':
-        item_ids = request.form.getlist('items[]')
+        try:
+            item_ids = request.form.getlist('items[]')
 
-        if not item_ids:
-            flash('No items selected!')
-            return redirect(url_for('student_order_food'))
+            if not item_ids:
+                flash('No items selected!', 'error')
+                return redirect(url_for('student_order_food'))
 
-        total_amount = 0
-        order_details = []
+            total_amount = 0
+            order_details = []
 
-        # Calculate total and prepare details
-        for item_id in item_ids:
-            qty = int(request.form.get(f'qty_{item_id}', 1))
-            if qty > 0:
+            # Calculate total and prepare details
+            for item_id in item_ids:
+                try:
+                    qty = int(request.form.get(f'qty_{item_id}', 1))
+                except (TypeError, ValueError):
+                    qty = 0
+
+                if qty <= 0:
+                    continue
+
                 cursor.execute(
-                    'SELECT price FROM Food_Items WHERE id=%s', (item_id,))
-                price = cursor.fetchone()['price']
-                total_amount += (float(price) * qty)
-                order_details.append((item_id, qty, price))
+                    'SELECT id, price FROM Food_Items WHERE id=%s', (item_id,))
+                food_item = cursor.fetchone()
+                if not food_item:
+                    flash(
+                        'One of the selected food items is no longer available.', 'error')
+                    return redirect(url_for('student_order_food'))
 
-        if total_amount > 0:
+                price = food_item['price']
+                total_amount += (float(price) * qty)
+                order_details.append((food_item['id'], qty, price))
+
+            if total_amount <= 0 or not order_details:
+                flash(
+                    'Please select at least one valid item with quantity greater than zero.', 'error')
+                return redirect(url_for('student_order_food'))
+
             # Create Order
             cursor.execute('INSERT INTO Orders (student_id, total_amount) VALUES (%s, %s)',
                            (student_id, total_amount))
@@ -574,9 +641,15 @@ def student_order_food():
                            (student_id, total_amount))
 
             conn.commit()
-            flash('Food ordered successfully! Payment added to pending dues.')
-
-        return redirect(url_for('student_my_orders'))
+            flash('Food ordered successfully! Payment added to pending dues.', 'success')
+            return redirect(url_for('student_my_orders'))
+        except Exception as e:
+            conn.rollback()
+            flash(f'Failed to place order: {e}', 'error')
+            return redirect(url_for('student_order_food'))
+        finally:
+            cursor.close()
+            conn.close()
 
     cursor.execute('SELECT * FROM Food_Items ORDER BY category, name')
     foods = cursor.fetchall()
@@ -627,7 +700,7 @@ def student_complaints():
         cursor.execute('INSERT INTO Complaints (student_id, room_id, description, is_anonymous) VALUES (%s, %s, %s, %s)',
                        (student_id, room_id, description, is_anonymous))
         conn.commit()
-        flash('Complaint submitted successfully')
+        flash('Complaint submitted successfully.', 'success')
         return redirect(url_for('student_complaints'))
 
     cursor.execute(
@@ -647,21 +720,26 @@ def student_maintenance():
     cursor = conn.cursor()
 
     if request.method == 'POST':
-        issue = request.form['issue']
+        try:
+            issue = request.form['issue']
 
-        cursor.execute(
-            "SELECT room_id FROM Room_Assignments WHERE student_id=%s", (student_id,))
-        room = cursor.fetchone()
+            cursor.execute(
+                "SELECT room_id FROM Room_Assignments WHERE student_id=%s", (student_id,))
+            room = cursor.fetchone()
 
-        if not room:
-            flash('You must be assigned a room before requesting maintenance!')
-        else:
-            cursor.execute('INSERT INTO Maintenance_Requests (student_id, room_id, issue) VALUES (%s, %s, %s)',
-                           (student_id, room['room_id'], issue))
-            conn.commit()
-            flash('Maintenance request submitted.')
+            if not room:
+                flash(
+                    'You must be assigned a room before requesting maintenance!', 'error')
+            else:
+                cursor.execute('INSERT INTO Maintenance_Requests (student_id, room_id, issue) VALUES (%s, %s, %s)',
+                               (student_id, room['room_id'], issue))
+                conn.commit()
+                flash('Maintenance request submitted.', 'success')
 
-        return redirect(url_for('student_maintenance'))
+            return redirect(url_for('student_maintenance'))
+        finally:
+            cursor.close()
+            conn.close()
 
     cursor.execute(
         'SELECT * FROM Maintenance_Requests WHERE student_id=%s ORDER BY created_at DESC', (student_id,))
@@ -693,6 +771,7 @@ def student_hall_fees():
     total_due = cursor.fetchone()['total_due'] or 0.0
 
     cursor.close()
+    conn.close()
     return render_template('student/hall_fees.html', fees=fees, total_due=total_due)
 
 
@@ -727,6 +806,7 @@ def pay_hall_fee(id):
         flash('Hall fee payment successful!', 'success')
 
     cursor.close()
+    conn.close()
     return redirect(url_for('student_hall_fees'))
 
 
@@ -765,19 +845,19 @@ def pay_amount(id):
 
     if not payment:
         conn.close()
-        flash('Payment not found.')
+        flash('Payment not found.', 'error')
         return redirect(url_for('student_payments'))
 
     if payment['status'] == 'Paid':
         conn.close()
-        flash('This payment is already marked as paid.')
+        flash('This payment is already marked as paid.', 'info')
         return redirect(url_for('student_payments'))
 
     cursor.execute(
         "UPDATE Payments SET status='Paid' WHERE id=%s AND student_id=%s", (id, student_id))
     conn.commit()
     conn.close()
-    flash('Payment marked as paid (cash).')
+    flash('Payment marked as paid (cash).', 'success')
     return redirect(url_for('student_payments'))
 
 
@@ -890,11 +970,24 @@ def teacher_complaints():
 def teacher_update_complaint(id):
     if session.get('role') != 'Teacher':
         return redirect(url_for('index'))
+
+    teacher_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE Complaints SET status='Reviewed' WHERE id=%s", (id,))
+    cursor.execute('''UPDATE Complaints
+                      SET status='Reviewed'
+                      WHERE id = %s
+                        AND room_id IN (SELECT id FROM Rooms WHERE teacher_id = %s)''',
+                   (id, teacher_id))
+
+    if cursor.rowcount == 0:
+        flash('You are not allowed to update this complaint.', 'error')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('teacher_complaints'))
+
     conn.commit()
+    flash('Complaint marked as reviewed.', 'success')
     cursor.close()
     conn.close()
     return redirect(url_for('teacher_complaints'))
@@ -909,17 +1002,20 @@ def student_reading_room():
     cursor = conn.cursor()
 
     if request.method == 'POST':
-        booking_date = request.form['booking_date']
-        time_slot = request.form['time_slot']
-
         try:
+            booking_date = request.form['booking_date']
+            time_slot = request.form['time_slot']
+
             cursor.execute('''INSERT INTO Reading_Room_Bookings (student_id, booking_date, time_slot)
                               VALUES (%s, %s, %s)''', (student_id, booking_date, time_slot))
             conn.commit()
-            flash('Reading room booked successfully!')
-        except Exception as e:
-            flash('Slot already booked or invalid request.')
+            flash('Reading room booked successfully!', 'success')
+        except Exception:
+            flash('Slot already booked or invalid request.', 'error')
             conn.rollback()
+        finally:
+            cursor.close()
+            conn.close()
         return redirect(url_for('student_reading_room'))
 
     cursor.execute('''SELECT * FROM Reading_Room_Bookings 
@@ -927,7 +1023,7 @@ def student_reading_room():
                       ORDER BY booking_date, time_slot''', (student_id,))
     bookings = cursor.fetchall()
     conn.close()
-    return render_template('student/reading_room.html', bookings=bookings)
+    return render_template('student/reading_room.html', bookings=bookings, current_date=datetime.now().date())
 
 
 @app.route('/chat')

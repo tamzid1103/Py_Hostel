@@ -74,8 +74,11 @@
             </td>
             <td style="padding:15px;">${{ food.price }}</td>
             <td style="padding:15px;">
-                <a href="{{ url_for('delete_food', id=food.id) }}" class="text-danger" style="text-decoration:none;"
-                    onclick="return confirm('Delete this food item?');">Delete</a>
+                <form action="{{ url_for('delete_food', id=food.id) }}" method="POST"
+                    onsubmit="return confirm('Delete this food item?');" style="display:inline;">
+                    <button type="submit" class="text-danger"
+                        style="background:none; border:none; padding:0; cursor:pointer; text-decoration:none;">Delete</button>
+                </form>
             </td>
         </tr>
         {% else %}
