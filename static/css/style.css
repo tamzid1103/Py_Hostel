@@ -531,11 +531,30 @@ textarea {
 
     table {
         font-size: 13px;
+        display: block;
+        overflow-x: auto !important;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 5px;
+    }
+
+    table::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    table::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    table::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
     }
 
     table th,
     table td {
-        padding: 10px 8px;
+        padding: 10px 8px !important;
     }
 
     .btn {
@@ -610,10 +629,17 @@ textarea {
     }
 
     table {
-        font-size: 12px;
+        font-size: 11px;
         display: block;
-        overflow-x: auto;
+        overflow-x: auto !important;
         white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 5px;
+    }
+
+    table th,
+    table td {
+        padding: 8px 5px !important;
     }
 
     .btn {

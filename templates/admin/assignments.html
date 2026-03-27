@@ -27,8 +27,8 @@
 <div class="form-container" style="background:#fff; padding:20px; border-radius:8px; margin-bottom: 20px;">
     <h3>Assign Student to Room</h3>
     <form action="{{ url_for('admin_assignments') }}" method="POST"
-        style="display: flex; gap: 15px; align-items: flex-end;">
-        <div class="form-group" style="margin-bottom:0; flex:1;">
+        style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+        <div class="form-group" style="margin-bottom:0; flex:1; min-width: 150px;">
             <label>Student</label>
             <select name="student_id" required>
                 <option value="" disabled selected>Select Unassigned Student</option>

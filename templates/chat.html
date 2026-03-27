@@ -105,6 +105,29 @@
         border-radius: 20px;
         cursor: pointer;
     }
+
+    @media screen and (max-width: 768px) {
+        .chat-container {
+            flex-direction: column;
+            height: 75vh;
+        }
+
+        .contacts {
+            width: 100%;
+            height: 35%;
+            border-right: none;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .chat-area {
+            width: 100%;
+            height: 65%;
+        }
+
+        .message {
+            max-width: 85%;
+        }
+    }
 </style>
 
 <div class="chat-container">
