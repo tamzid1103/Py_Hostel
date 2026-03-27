@@ -11,11 +11,11 @@
 <body>
     <div class="login-container">
         <h2>Register for NASA_Home</h2>
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <ul class="flashes">
-            {% for message in messages %}
-            <li>{{ message }}</li>
+            {% for category, message in messages %}
+            <li class="flash {{ category if category else 'info' }}">{{ message }}</li>
             {% endfor %}
         </ul>
         {% endif %}
