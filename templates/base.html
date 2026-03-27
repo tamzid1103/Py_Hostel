@@ -9,15 +9,28 @@
 </head>
 
 <body>
-    <div class="sidebar">
-        <h2>NASA_Home</h2>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>NASA_Home</h2>
+            <button class="close-sidebar" id="closeSidebar" aria-label="Close menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
         <ul>
             {% block sidebar %}{% endblock %}
             <li><a href="{{ url_for('logout') }}" class="text-danger">Logout</a></li>
         </ul>
     </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="main-content">
         <header>
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
             <div class="user-info">
                 Welcome, {{ session['full_name'] }} ({{ session['role'] }})
             </div>
@@ -37,6 +50,8 @@
             {% block content %}{% endblock %}
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 
 </html>
