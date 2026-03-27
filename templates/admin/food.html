@@ -72,7 +72,7 @@
                     style="background:#3498db; color:white; padding:3px 8px; border-radius:12px; font-size:12px;">All</span>
                 {% endif %}
             </td>
-            <td style="padding:15px;">${{ food.price }}</td>
+            <td style="padding:15px;">Tk {{ food.price }}</td>
             <td style="padding:15px;">
                 <form action="{{ url_for('delete_food', id=food.id) }}" method="POST"
                     onsubmit="return confirm('Delete this food item?');" style="display:inline;">

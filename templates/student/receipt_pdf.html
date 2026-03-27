@@ -68,7 +68,7 @@
             <tr>
                 <td>{{ payment.payment_type }} Fee</td>
                 <td>{{ payment.status }}</td>
-                <td class="total">${{ "%.2f"|format(payment.amount) }}</td>
+                <td class="total">Tk {{ "%.2f"|format(payment.amount) }}</td>
             </tr>
         </table>
 
