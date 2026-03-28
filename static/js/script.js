@@ -5,14 +5,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const closeSidebar = document.getElementById('closeSidebar');
     const sidebarLinks = sidebar.querySelectorAll('a');
-    // Toggle sidebar on hamburger click
+
+    if (hamburger && window.innerWidth > 768) {
+        hamburger.classList.add('active');
+    }
+
     if (hamburger) {
         hamburger.addEventListener('click', function () {
             if (window.innerWidth > 768) {
                 sidebar.classList.toggle('collapsed');
                 document.querySelector('.main-content').classList.toggle('expanded');
-                // also toggle active on hamburger itself for the cross animation on desktop
-                hamburger.classList.toggle('active');
+                if (sidebar.classList.contains('collapsed')) {
+                    hamburger.classList.remove('active');
+                } else {
+                    hamburger.classList.add('active');
+                }
             } else {
                 hamburger.classList.toggle('active');
                 sidebar.classList.toggle('active');
@@ -22,8 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-
-    // Close sidebar on overlay click
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', function () {
             hamburger.classList.remove('active');
@@ -32,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Close sidebar on close button click
     if (closeSidebar) {
         closeSidebar.addEventListener('click', function () {
             hamburger.classList.remove('active');
@@ -41,10 +45,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Close sidebar when a link is clicked
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function () {
-            // Only close on mobile/tablet
             if (window.innerWidth <= 768) {
                 hamburger.classList.remove('active');
                 sidebar.classList.remove('active');
@@ -53,46 +55,31 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Handle window resize - close menu on larger screens
     window.addEventListener('resize', function () {
         if (window.innerWidth > 768) {
-            hamburger.classList.remove('active');
             sidebar.classList.remove('active');
             sidebarOverlay.classList.remove('active');
+            if (!sidebar.classList.contains('collapsed')) {
+                hamburger.classList.add('active');
+            } else {
+                hamburger.classList.remove('active');
+            }
+        } else {
+            if (!sidebar.classList.contains('active')) {
+                hamburger.classList.remove('active');
+            } else {
+                hamburger.classList.add('active');
+            }
         }
+        updateBodyScroll();
     });
 
-    // Prevent body scroll when sidebar is open on mobile
     const originalOverflow = document.body.style.overflow;
-
     function updateBodyScroll() {
-        if (sidebar.classList.contains('active') && window.innerWidth <= 768) {
+        if (sidebar && sidebar.classList.contains('active') && window.innerWidth <= 768) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = originalOverflow || 'auto';
         }
     }
-
-    // Update on hamburger click
-    if (hamburger) {
-        hamburger.addEventListener('click', updateBodyScroll);
-    }
-
-    // Update on overlay click
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', updateBodyScroll);
-    }
-
-    // Update on close button click
-    if (closeSidebar) {
-        closeSidebar.addEventListener('click', updateBodyScroll);
-    }
-
-    // Update on sidebar link click
-    sidebarLinks.forEach(link => {
-        link.addEventListener('click', updateBodyScroll);
-    });
-
-    // Update on resize
-    window.addEventListener('resize', updateBodyScroll);
 });

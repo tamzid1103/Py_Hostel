@@ -217,7 +217,7 @@ td .btn {
     left: 0;
     top: 0;
     z-index: 1000;
-    overflow-y: auto;
+    overflow-y: hidden;
     border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -258,7 +258,10 @@ td .btn {
     list-style: none;
     flex: 1;
     padding: 0 12px;
+    overflow-y: auto;
 }
+.sidebar ul::-webkit-scrollbar { width: 6px; }
+.sidebar ul::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 
 .sidebar ul li {
     width: 100%;
@@ -742,3 +745,12 @@ span[style*="padding"] {
     .main-content { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .main-content.expanded { margin-left: 0; width: 100%; }
 }
+
+.btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff; }
+.btn-danger:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); box-shadow: 0 6px 12px -2px rgba(239, 68, 68, 0.4); }
+
+.user-info { display: flex; align-items: center; gap: 12px; background: var(--bg-card); padding: 6px 16px 6px 6px; border-radius: 100px; box-shadow: var(--shadow-sm); border: var(--glass-border); font-size: inherit; }
+.user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #3b82f6); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; }
+.user-details { display: flex; flex-direction: column; text-align: left; }
+.user-name { font-size: 14px; font-weight: 600; color: var(--text-main); line-height: 1.2; }
+.user-role { font-size: 11px; color: var(--text-muted); font-weight: 500; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px; }

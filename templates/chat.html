@@ -7,33 +7,40 @@
     .chat-container {
         display: flex;
         height: 75vh;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        border: var(--glass-border);
+        border-radius: var(--radius-lg);
         overflow: hidden;
-        background: #fff;
+        background: var(--bg-card);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        box-shadow: var(--shadow-md);
     }
 
     .contacts {
         width: 30%;
-        border-right: 1px solid #ddd;
-        background: #f9f9f9;
+        border-right: 1px solid var(--border-color);
+        background: rgba(0,0,0,0.05);
         overflow-y: auto;
+        display: flex;
+        flex-direction: column;
     }
 
     .contact-item {
         padding: 15px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border-color);
         cursor: pointer;
-        transition: background 0.3s;
+        transition: var(--transition);
     }
 
     .contact-item:hover {
-        background: #e0e0e0;
+        background: rgba(255,255,255,0.1);
     }
 
     .contact-item.active {
-        background: #3498db;
+        background: linear-gradient(135deg, var(--primary), #3b82f6);
         color: white;
+        border-bottom: none;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
     }
 
     .chat-area {
@@ -46,11 +53,13 @@
         flex: 1;
         padding: 20px;
         overflow-y: auto;
-        background: #fafafa;
+        background: rgba(255,255,255,0.02);
         display: flex;
         flex-direction: column;
         gap: 10px;
     }
+    .messages::-webkit-scrollbar { width: 6px; }
+    .messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 
     .message {
         padding: 10px 15px;
@@ -60,17 +69,19 @@
     }
 
     .message.sent {
-        background: #3498db;
+        background: linear-gradient(135deg, var(--primary), #3b82f6);
         color: white;
         align-self: flex-end;
         border-bottom-right-radius: 2px;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
     }
 
     .message.received {
-        background: #ecf0f1;
-        color: #333;
+        background: rgba(255,255,255,0.15);
+        color: var(--text-main);
         align-self: flex-start;
         border-bottom-left-radius: 2px;
+        border: 1px solid rgba(255,255,255,0.1);
     }
 
     .msg-time {
@@ -83,28 +94,36 @@
 
     .chat-input {
         padding: 15px;
-        border-top: 1px solid #ddd;
+        border-top: 1px solid var(--border-color);
         display: flex;
         gap: 10px;
-        background: white;
+        background: rgba(0,0,0,0.1);
     }
 
     .chat-input input {
         flex: 1;
-        padding: 10px;
-        border: 1px solid #ccc;
+        padding: 12px 20px;
+        border: 1px solid var(--border-color);
         border-radius: 20px;
         outline: none;
+        background: rgba(255,255,255,0.05);
+        color: var(--text-main);
+        font-family: inherit;
     }
+    .chat-input input::placeholder { color: var(--text-muted); }
 
     .chat-input button {
-        padding: 10px 20px;
-        background: #3498db;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--primary), #3b82f6);
         color: white;
         border: none;
         border-radius: 20px;
         cursor: pointer;
+        font-weight: 600;
+        transition: var(--transition);
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
     }
+    .chat-input button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4); }
 
     @media screen and (max-width: 768px) {
         .chat-container {
@@ -127,16 +146,21 @@
         .message {
             max-width: 85%;
         }
+        .contacts {
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+        }
     }
 </style>
 
 <div class="chat-container">
     <div class="contacts">
-        <h3 style="padding: 15px; margin: 0; background: #2c3e50; color: white;">Contacts</h3>
+        <div style="padding: 20px 15px; margin: 0; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 16px; color: var(--text-main); display: flex; align-items: center; gap: 10px;"><div style="width:8px; height:8px; background:var(--primary); border-radius:50%;"></div> Contacts</div>
         {% for c in contacts %}
         <div class="contact-item" data-id="{{ c.id }}" onclick="selectContact({{ c.id }}, '{{ c.name }}', this)">
-            <strong>{{ c.name }}</strong>
-            <div style="font-size: 12px; opacity: 0.8;">{{ c.info }}</div>
+            <strong style="color: inherit; display: block; font-size: 15px;">{{ c.name }}</strong>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px; color: inherit;">{{ c.info }}</div>
         </div>
         {% else %}
         <div style="padding: 15px; text-align: center; color: #777;">No contacts available.</div>
@@ -144,7 +168,7 @@
     </div>
 
     <div class="chat-area">
-        <div style="padding: 15px; background: #ecf0f1; border-bottom: 1px solid #ddd;">
+        <div style="padding: 20px 25px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.05); color: var(--text-main); display: flex; align-items: center; gap: 10px;"><div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; font-weight:bold;" id="chat-avatar">#</div>
             <strong id="chat-header">Select a contact to start messaging</strong>
         </div>
 
@@ -180,6 +204,9 @@
     function selectContact(id, name, el) {
         activeReceiverId = id;
         document.getElementById('chat-header').innerText = "Chat with " + name;
+        const avatar = document.getElementById('chat-avatar');
+        if (avatar) avatar.innerText = name.charAt(0).toUpperCase();
+        avatar.style.background = 'linear-gradient(135deg, var(--primary), #3b82f6)';
         document.getElementById('chat-input').style.display = 'flex';
 
         // highlight active

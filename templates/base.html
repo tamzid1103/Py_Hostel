@@ -36,7 +36,11 @@
                 <span></span>
             </button>
             <div class="user-info">
-                Welcome, {{ session['full_name'] }} ({{ session['role'] }})
+                <div class="user-avatar">{{ session['full_name'][0] | upper }}</div>
+                <div class="user-details">
+                    <span class="user-name">{{ session['full_name'] }}</span>
+                    <span class="user-role">{{ session['role'] }}</span>
+                </div>
             </div>
         </header>
 
