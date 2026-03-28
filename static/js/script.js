@@ -5,15 +5,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const closeSidebar = document.getElementById('closeSidebar');
     const sidebarLinks = sidebar.querySelectorAll('a');
-
     // Toggle sidebar on hamburger click
     if (hamburger) {
         hamburger.addEventListener('click', function () {
-            hamburger.classList.toggle('active');
-            sidebar.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
+            if (window.innerWidth > 768) {
+                sidebar.classList.toggle('collapsed');
+                document.querySelector('.main-content').classList.toggle('expanded');
+                // also toggle active on hamburger itself for the cross animation on desktop
+                hamburger.classList.toggle('active');
+            } else {
+                hamburger.classList.toggle('active');
+                sidebar.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+            }
+            updateBodyScroll();
         });
     }
+
 
     // Close sidebar on overlay click
     if (sidebarOverlay) {
