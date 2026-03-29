@@ -45,14 +45,41 @@ def close_db(error):
             pass
 
 
+def get_dashboard_endpoint():
+    role = session.get('role')
+    if role == 'Admin':
+        return 'admin_dashboard'
+    if role == 'Student':
+        return 'student_dashboard'
+    if role == 'Teacher':
+        return 'teacher_dashboard'
+    return None
+
+
+def redirect_to_dashboard():
+    dashboard_endpoint = get_dashboard_endpoint()
+    if dashboard_endpoint:
+        return redirect(url_for(dashboard_endpoint))
+
+    session.clear()
+    flash('Please login to continue.', 'error')
+    return redirect(url_for('login'))
+
+
+def redirect_forbidden():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return redirect(url_for('dashboard'))
+
+
 def login_required(role=None):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if 'user_id' not in session:
-                return redirect(url_for('index'))
+                return redirect_forbidden()
             if role and session.get('role') != role:
-                return redirect(url_for('index'))
+                return redirect_forbidden()
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -60,18 +87,23 @@ def login_required(role=None):
 
 @app.route('/')
 def index():
-    if 'user_id' in session:
-        if session['role'] == 'Admin':
-            return redirect(url_for('admin_dashboard'))
-        elif session['role'] == 'Student':
-            return redirect(url_for('student_dashboard'))
-        elif session['role'] == 'Teacher':
-            return redirect(url_for('teacher_dashboard'))
-    return render_template('login.html')
+    return render_template('landing.html')
 
 
-@app.route('/login', methods=['POST'])
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return redirect_to_dashboard()
+
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'GET':
+        if 'user_id' in session:
+            return redirect(url_for('dashboard'))
+        return render_template('login.html')
+
     email = request.form['email']
     password = request.form['password']
 
@@ -83,17 +115,17 @@ def login():
         cursor.close()
     except pymysql.err.OperationalError as e:
         flash(f'Database connection error: {str(e)}', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('login'))
 
     if user and check_password_hash(user['password'], password):
         session['user_id'] = user['id']
         session['role'] = user['role']
         session['full_name'] = user['full_name']
         flash('Login successful!', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     else:
         flash('Invalid credentials', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('login'))
 
 
 @app.route('/logout')
@@ -105,6 +137,9 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+
     if request.method == 'POST':
         full_name = request.form['full_name']
         email = request.form['email']
@@ -145,7 +180,7 @@ def register():
         cursor.close()
 
         flash(f'Successfully registered as {role}. Please login.', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('login'))
 
     return render_template('register.html')
 
@@ -153,7 +188,7 @@ def register():
 @app.route('/admin')
 def admin_dashboard():
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -181,7 +216,7 @@ def admin_dashboard():
 @app.route('/admin/rooms', methods=['GET', 'POST'])
 def admin_rooms():
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -224,7 +259,7 @@ def admin_rooms():
 @app.route('/admin/rooms/delete/<int:id>', methods=['POST'])
 def delete_room(id):
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM Rooms WHERE id = %s', (id,))
@@ -237,7 +272,7 @@ def delete_room(id):
 @app.route('/admin/rooms/assign-teacher/<int:id>', methods=['POST'])
 def assign_room_teacher(id):
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     teacher_id = request.form.get('teacher_id')
     if not teacher_id:
@@ -279,7 +314,7 @@ def assign_room_teacher(id):
 @app.route('/admin/food', methods=['GET', 'POST'])
 def admin_food():
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -305,7 +340,7 @@ def admin_food():
 @app.route('/admin/food/delete/<int:id>', methods=['POST'])
 def delete_food(id):
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM Food_Items WHERE id = %s', (id,))
@@ -319,7 +354,7 @@ def delete_food(id):
 @app.route('/admin/assignments', methods=['GET', 'POST'])
 def admin_assignments():
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -378,7 +413,7 @@ def admin_assignments():
 @app.route('/admin/assignments/remove/<int:id>', methods=['POST'])
 def remove_assignment(id):
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM Room_Assignments WHERE id = %s', (id,))
@@ -393,7 +428,7 @@ def remove_assignment(id):
 @app.route('/admin/orders')
 def admin_orders():
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''SELECT o.id, u.full_name as student_name, o.total_amount, o.order_date, 
@@ -412,7 +447,7 @@ def admin_orders():
 @app.route('/admin/complaints')
 def admin_complaints():
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''SELECT c.*, u.full_name, r.room_number 
@@ -428,7 +463,7 @@ def admin_complaints():
 @app.route('/admin/complaints/update/<int:id>', methods=['POST'])
 def update_complaint(id):
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
@@ -442,7 +477,7 @@ def update_complaint(id):
 @app.route('/admin/maintenance')
 def admin_maintenance():
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''SELECT m.*, u.full_name, r.room_number 
@@ -458,7 +493,7 @@ def admin_maintenance():
 @app.route('/admin/maintenance/update/<int:id>/<status>', methods=['POST'])
 def update_maintenance(id, status):
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     if status not in VALID_MAINTENANCE_STATUSES:
         flash('Invalid maintenance status.', 'error')
         return redirect(url_for('admin_maintenance'))
@@ -477,7 +512,7 @@ def update_maintenance(id, status):
 @app.route('/admin/fees', methods=['GET', 'POST'])
 def admin_fees():
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -521,7 +556,7 @@ def admin_fees():
 @app.route('/admin/fees/delete/<int:id>', methods=['POST'])
 def delete_fee(id):
     if session.get('role') != 'Admin':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -536,7 +571,7 @@ def delete_fee(id):
 @app.route('/student')
 def student_dashboard():
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     student_id = session['user_id']
     conn = get_db_connection()
@@ -583,7 +618,7 @@ def student_dashboard():
 @app.route('/student/order-food', methods=['GET', 'POST'])
 def student_order_food():
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     student_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -661,7 +696,7 @@ def student_order_food():
 @app.route('/student/my-orders')
 def student_my_orders():
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     student_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -683,7 +718,7 @@ def student_my_orders():
 @app.route('/student/complaints', methods=['GET', 'POST'])
 def student_complaints():
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     student_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -714,7 +749,7 @@ def student_complaints():
 @app.route('/student/maintenance', methods=['GET', 'POST'])
 def student_maintenance():
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     student_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -754,7 +789,7 @@ def student_maintenance():
 @app.route('/student/hall-fees')
 def student_hall_fees():
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     student_id = session['user_id']
     conn = get_db_connection()
@@ -778,7 +813,7 @@ def student_hall_fees():
 @app.route('/student/hall-fees/pay/<int:id>', methods=['POST'])
 def pay_hall_fee(id):
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     student_id = session['user_id']
     conn = get_db_connection()
@@ -813,7 +848,7 @@ def pay_hall_fee(id):
 @app.route('/student/payments')
 def student_payments():
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     student_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -833,7 +868,7 @@ def student_payments():
 @app.route('/student/payments/pay/<int:id>', methods=['POST'])
 def pay_amount(id):
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     student_id = session['user_id']
     conn = get_db_connection()
@@ -864,7 +899,7 @@ def pay_amount(id):
 @app.route('/student/payments/receipt/<int:id>')
 def download_receipt(id):
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -911,14 +946,14 @@ def download_receipt(id):
 @app.route('/teacher')
 def teacher_dashboard():
     if session.get('role') != 'Teacher':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     return render_template('teacher/dashboard.html')
 
 
 @app.route('/teacher/rooms')
 def teacher_rooms():
     if session.get('role') != 'Teacher':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -949,7 +984,7 @@ def teacher_rooms():
 @app.route('/teacher/complaints')
 def teacher_complaints():
     if session.get('role') != 'Teacher':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -969,7 +1004,7 @@ def teacher_complaints():
 @app.route('/teacher/complaints/update/<int:id>', methods=['POST'])
 def teacher_update_complaint(id):
     if session.get('role') != 'Teacher':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     teacher_id = session['user_id']
     conn = get_db_connection()
@@ -996,7 +1031,7 @@ def teacher_update_complaint(id):
 @app.route('/student/reading_room', methods=['GET', 'POST'])
 def student_reading_room():
     if session.get('role') != 'Student':
-        return redirect(url_for('index'))
+        return redirect_forbidden()
     student_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -1029,7 +1064,7 @@ def student_reading_room():
 @app.route('/chat')
 def chat():
     if 'user_id' not in session:
-        return redirect(url_for('index'))
+        return redirect_forbidden()
 
     conn = get_db_connection()
     cursor = conn.cursor()

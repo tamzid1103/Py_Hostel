@@ -260,8 +260,15 @@ td .btn {
     padding: 0 12px;
     overflow-y: auto;
 }
-.sidebar ul::-webkit-scrollbar { width: 6px; }
-.sidebar ul::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+.sidebar ul::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar ul::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
 
 .sidebar ul li {
     width: 100%;
@@ -546,6 +553,45 @@ textarea {
     min-height: 120px;
 }
 
+/* Improve clarity of auth form fields (login/register) */
+.login-container form {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.login-container .form-group input,
+.login-container .form-group select {
+    border: 1.5px solid #b8c3d9;
+    background-color: rgba(255, 255, 255, 0.96);
+    min-height: 50px;
+    margin-bottom: 0;
+}
+
+.login-container .form-group input::placeholder {
+    color: #94a3b8;
+    opacity: 1;
+}
+
+.login-container .form-group select:invalid {
+    color: #94a3b8;
+}
+
+.login-container .form-group select option {
+    color: var(--text-main);
+}
+
+.login-container .form-group input:focus,
+.login-container .form-group select:focus {
+    border-color: var(--primary);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+}
+
 /* Status Badges */
 span[style*="padding"] {
     /* Targets inline styled spans like Pending/Paid */
@@ -739,18 +785,79 @@ span[style*="padding"] {
     border-radius: 16px 16px 16px 4px;
     color: var(--text-main);
 }
+
 @media screen and (min-width: 769px) {
-    .sidebar { transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .sidebar.collapsed { left: -260px; }
-    .main-content { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .main-content.expanded { margin-left: 0; width: 100%; }
+    .sidebar {
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar.collapsed {
+        left: -260px;
+    }
+
+    .main-content {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .main-content.expanded {
+        margin-left: 0;
+        width: 100%;
+    }
 }
 
-.btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff; }
-.btn-danger:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); box-shadow: 0 6px 12px -2px rgba(239, 68, 68, 0.4); }
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+}
 
-.user-info { display: flex; align-items: center; gap: 12px; background: var(--bg-card); padding: 6px 16px 6px 6px; border-radius: 100px; box-shadow: var(--shadow-sm); border: var(--glass-border); font-size: inherit; }
-.user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #3b82f6); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; }
-.user-details { display: flex; flex-direction: column; text-align: left; }
-.user-name { font-size: 14px; font-weight: 600; color: var(--text-main); line-height: 1.2; }
-.user-role { font-size: 11px; color: var(--text-muted); font-weight: 500; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px; }
+.btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 6px 12px -2px rgba(239, 68, 68, 0.4);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-card);
+    padding: 6px 16px 6px 6px;
+    border-radius: 100px;
+    box-shadow: var(--shadow-sm);
+    border: var(--glass-border);
+    font-size: inherit;
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #3b82f6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    line-height: 1.2;
+}
+
+.user-role {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
