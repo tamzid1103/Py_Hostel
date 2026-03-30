@@ -94,6 +94,19 @@ CREATE TABLE Notifications (
     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE Notices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    target_role ENUM('All', 'Admin', 'Student', 'Teacher') DEFAULT 'All',
+    is_active BOOLEAN DEFAULT TRUE,
+    is_pinned BOOLEAN DEFAULT FALSE,
+    expires_at DATETIME NULL,
+    created_by INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES Users(id) ON DELETE SET NULL
+);
+
 CREATE TABLE Reading_Room_Bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,

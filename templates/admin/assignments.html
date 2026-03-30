@@ -19,6 +19,8 @@
         %}>Maintenance Requests</a></li>
 <li><a href="{{ url_for('admin_fees') }}" {% if request.endpoint=='admin_fees' %}class="active" {% endif %}>Hall
         Fees</a></li>
+<li><a href="{{ url_for('admin_notices') }}" {% if request.endpoint in ['admin_notices', 'admin_toggle_notice'
+        , 'admin_pin_notice' , 'admin_delete_notice' ] %}class="active" {% endif %}>Notice Board</a></li>
 {% endblock %}
 
 {% block content %}
@@ -79,7 +81,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan=\"4\">No students assigned to rooms yet.</td>
+                <td colspan="4">No students assigned to rooms yet.</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -15,6 +15,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
 socketio = SocketIO(app)
 
 VALID_MAINTENANCE_STATUSES = ['Pending', 'In Progress', 'Resolved']
+VALID_NOTICE_TARGET_ROLES = ['All', 'Admin', 'Student', 'Teacher']
 
 # Database connection details
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
@@ -85,6 +86,90 @@ def login_required(role=None):
     return decorator
 
 
+def serialize_timestamp(value):
+    if isinstance(value, datetime):
+        return value.strftime('%Y-%m-%d %H:%M')
+    return value
+
+
+def ensure_notices_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''CREATE TABLE IF NOT EXISTS Notices (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            title VARCHAR(255) NOT NULL,
+                            message TEXT NOT NULL,
+                            target_role ENUM('All', 'Admin', 'Student', 'Teacher') DEFAULT 'All',
+                            is_active BOOLEAN DEFAULT TRUE,
+                            is_pinned BOOLEAN DEFAULT FALSE,
+                            expires_at DATETIME NULL,
+                            created_by INT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (created_by) REFERENCES Users(id) ON DELETE SET NULL
+                          )''')
+        conn.commit()
+    finally:
+        cursor.close()
+
+
+def create_notification(user_id, message):
+    if not user_id or not message:
+        return None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            'INSERT INTO Notifications (user_id, message) VALUES (%s, %s)',
+            (user_id, message)
+        )
+        conn.commit()
+
+        notification_id = cursor.lastrowid
+        cursor.execute(
+            'SELECT id, user_id, message, is_read, created_at FROM Notifications WHERE id = %s',
+            (notification_id,)
+        )
+        notification = cursor.fetchone()
+
+        if notification and notification.get('created_at'):
+            notification['created_at'] = serialize_timestamp(
+                notification['created_at'])
+
+        socketio.emit('notification:new', notification, room=f'user_{user_id}')
+        return notification
+    except Exception:
+        conn.rollback()
+        return None
+    finally:
+        cursor.close()
+
+
+def create_role_notifications(roles, message, exclude_user_id=None):
+    if not roles or not message:
+        return
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        placeholders = ', '.join(['%s'] * len(roles))
+        query = f'SELECT id FROM Users WHERE role IN ({placeholders})'
+        params = list(roles)
+
+        if exclude_user_id is not None:
+            query += ' AND id != %s'
+            params.append(exclude_user_id)
+
+        cursor.execute(query, tuple(params))
+        recipients = [row['id'] for row in cursor.fetchall()]
+    finally:
+        cursor.close()
+
+    for recipient_id in recipients:
+        create_notification(recipient_id, message)
+
+
 @app.route('/')
 def index():
     return render_template('landing.html')
@@ -95,6 +180,108 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     return redirect_to_dashboard()
+
+
+@app.route('/api/notifications')
+def api_notifications():
+    if 'user_id' not in session:
+        return jsonify({'notifications': [], 'unread_count': 0}), 401
+
+    limit = request.args.get('limit', default=15, type=int)
+    limit = max(1, min(limit, 50))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''SELECT id, message, is_read, created_at
+                      FROM Notifications
+                      WHERE user_id = %s
+                      ORDER BY created_at DESC
+                      LIMIT %s''', (session['user_id'], limit))
+    notifications = cursor.fetchall()
+
+    cursor.execute(
+        'SELECT COUNT(*) AS unread_count FROM Notifications WHERE user_id = %s AND is_read = 0',
+        (session['user_id'],)
+    )
+    unread_count = cursor.fetchone()['unread_count']
+    cursor.close()
+
+    for notification in notifications:
+        notification['created_at'] = serialize_timestamp(
+            notification['created_at'])
+
+    return jsonify({'notifications': notifications, 'unread_count': unread_count})
+
+
+@app.route('/api/notifications/read/<int:notification_id>', methods=['POST'])
+def api_mark_notification_read(notification_id):
+    if 'user_id' not in session:
+        return jsonify({'updated': False, 'unread_count': 0}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''UPDATE Notifications
+                      SET is_read = TRUE
+                      WHERE id = %s AND user_id = %s''',
+                   (notification_id, session['user_id']))
+    updated = cursor.rowcount > 0
+    conn.commit()
+
+    cursor.execute(
+        'SELECT COUNT(*) AS unread_count FROM Notifications WHERE user_id = %s AND is_read = 0',
+        (session['user_id'],)
+    )
+    unread_count = cursor.fetchone()['unread_count']
+    cursor.close()
+
+    return jsonify({'updated': updated, 'unread_count': unread_count})
+
+
+@app.route('/api/notifications/read-all', methods=['POST'])
+def api_mark_all_notifications_read():
+    if 'user_id' not in session:
+        return jsonify({'updated_count': 0, 'unread_count': 0}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''UPDATE Notifications
+                      SET is_read = TRUE
+                      WHERE user_id = %s AND is_read = FALSE''',
+                   (session['user_id'],))
+    updated_count = cursor.rowcount
+    conn.commit()
+    cursor.close()
+
+    return jsonify({'updated_count': updated_count, 'unread_count': 0})
+
+
+@app.route('/api/notices')
+def api_notices():
+    if 'user_id' not in session:
+        return jsonify({'notices': []}), 401
+
+    ensure_notices_table()
+
+    limit = request.args.get('limit', default=15, type=int)
+    limit = max(1, min(limit, 50))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''SELECT id, title, message, target_role, is_pinned, created_at, expires_at
+                      FROM Notices
+                      WHERE is_active = TRUE
+                        AND (target_role = 'All' OR target_role = %s)
+                        AND (expires_at IS NULL OR expires_at >= NOW())
+                      ORDER BY is_pinned DESC, created_at DESC
+                      LIMIT %s''', (session['role'], limit))
+    notices = cursor.fetchall()
+    cursor.close()
+
+    for notice in notices:
+        notice['created_at'] = serialize_timestamp(notice['created_at'])
+        notice['expires_at'] = serialize_timestamp(notice['expires_at'])
+
+    return jsonify({'notices': notices})
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -383,6 +570,22 @@ def admin_assignments():
                 cursor.execute("INSERT INTO Room_Assignments (student_id, room_id, assigned_date) VALUES (%s, %s, %s)",
                                (student_id, room_id, assigned_date))
                 conn.commit()
+
+                cursor.execute(
+                    'SELECT room_number, teacher_id FROM Rooms WHERE id = %s', (room_id,))
+                room_info = cursor.fetchone()
+                room_number = room_info['room_number'] if room_info else room_id
+
+                create_notification(
+                    student_id,
+                    f'You have been assigned to room {room_number}.'
+                )
+                if room_info and room_info.get('teacher_id'):
+                    create_notification(
+                        room_info['teacher_id'],
+                        f'A new student has been assigned to room {room_number}.'
+                    )
+
                 flash("Student assigned successfully!", 'success')
 
         return redirect(url_for('admin_assignments'))
@@ -416,8 +619,27 @@ def remove_assignment(id):
         return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    cursor.execute('''SELECT ra.student_id, r.room_number, r.teacher_id
+                      FROM Room_Assignments ra
+                      JOIN Rooms r ON ra.room_id = r.id
+                      WHERE ra.id = %s''', (id,))
+    assignment = cursor.fetchone()
+
     cursor.execute('DELETE FROM Room_Assignments WHERE id = %s', (id,))
     conn.commit()
+
+    if assignment:
+        create_notification(
+            assignment['student_id'],
+            f'Your room assignment for room {assignment["room_number"]} was removed.'
+        )
+        if assignment.get('teacher_id'):
+            create_notification(
+                assignment['teacher_id'],
+                f'A student was removed from room {assignment["room_number"]}.'
+            )
+
     conn.close()
     flash('Student removed from room successfully!', 'success')
     return redirect(url_for('admin_assignments'))
@@ -466,9 +688,20 @@ def update_complaint(id):
         return redirect_forbidden()
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    cursor.execute('SELECT student_id FROM Complaints WHERE id = %s', (id,))
+    complaint = cursor.fetchone()
+
     cursor.execute(
         "UPDATE Complaints SET status='Reviewed' WHERE id=%s", (id,))
     conn.commit()
+
+    if complaint and complaint.get('student_id'):
+        create_notification(
+            complaint['student_id'],
+            'Your complaint has been reviewed by the admin.'
+        )
+
     conn.close()
     flash('Complaint marked as reviewed.', 'success')
     return redirect(url_for('admin_complaints'))
@@ -499,9 +732,21 @@ def update_maintenance(id, status):
         return redirect(url_for('admin_maintenance'))
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    cursor.execute(
+        'SELECT student_id FROM Maintenance_Requests WHERE id = %s', (id,))
+    request_row = cursor.fetchone()
+
     cursor.execute(
         "UPDATE Maintenance_Requests SET status=%s WHERE id=%s", (status, id))
     conn.commit()
+
+    if request_row and request_row.get('student_id'):
+        create_notification(
+            request_row['student_id'],
+            f'Your maintenance request status is now "{status}".'
+        )
+
     conn.close()
     flash(f'Maintenance request updated to {status}.', 'success')
     return redirect(url_for('admin_maintenance'))
@@ -531,6 +776,12 @@ def admin_fees():
                     (student_id, amount, due_date)
                 )
                 conn.commit()
+
+                create_notification(
+                    student_id,
+                    f'New hall fee assigned: Tk {amount} due by {due_date}.'
+                )
+
                 flash('Hall fee assigned successfully!', 'success')
             except Exception as e:
                 flash(f'An error occurred: {str(e)}', 'error')
@@ -566,6 +817,134 @@ def delete_fee(id):
 
     flash('Hall fee removed.', 'success')
     return redirect(url_for('admin_fees'))
+
+
+@app.route('/admin/notices', methods=['GET', 'POST'])
+def admin_notices():
+    if session.get('role') != 'Admin':
+        return redirect_forbidden()
+
+    ensure_notices_table()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        message = request.form.get('message', '').strip()
+        target_role = request.form.get('target_role', 'All')
+        is_pinned = True if request.form.get('is_pinned') else False
+        expires_at = request.form.get('expires_at') or None
+
+        if not title or not message:
+            flash('Title and message are required.', 'error')
+        elif target_role not in VALID_NOTICE_TARGET_ROLES:
+            flash('Invalid target role selected.', 'error')
+        else:
+            try:
+                cursor.execute('''INSERT INTO Notices
+                                  (title, message, target_role, is_pinned, created_by, expires_at)
+                                  VALUES (%s, %s, %s, %s, %s, %s)''',
+                               (title, message, target_role, is_pinned, session['user_id'], expires_at))
+                conn.commit()
+                flash('Notice published successfully!', 'success')
+
+                socketio.emit('notice:new', {
+                    'title': title,
+                    'message': message,
+                    'target_role': target_role,
+                    'is_pinned': is_pinned,
+                    'created_at': serialize_timestamp(datetime.now())
+                })
+            except Exception as e:
+                conn.rollback()
+                flash(f'Failed to publish notice: {e}', 'error')
+
+        cursor.close()
+        conn.close()
+        return redirect(url_for('admin_notices'))
+
+    cursor.execute('''SELECT n.*, u.full_name as created_by_name
+                      FROM Notices n
+                      LEFT JOIN Users u ON n.created_by = u.id
+                      ORDER BY n.created_at DESC''')
+    notices = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'admin/notices.html',
+        notices=notices,
+        target_roles=VALID_NOTICE_TARGET_ROLES
+    )
+
+
+@app.route('/admin/notices/toggle/<int:id>', methods=['POST'])
+def admin_toggle_notice(id):
+    if session.get('role') != 'Admin':
+        return redirect_forbidden()
+
+    ensure_notices_table()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''UPDATE Notices
+                      SET is_active = CASE WHEN is_active = TRUE THEN FALSE ELSE TRUE END
+                      WHERE id = %s''', (id,))
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        flash('Notice not found.', 'error')
+    else:
+        flash('Notice status updated.', 'success')
+
+    cursor.close()
+    conn.close()
+    return redirect(url_for('admin_notices'))
+
+
+@app.route('/admin/notices/pin/<int:id>', methods=['POST'])
+def admin_pin_notice(id):
+    if session.get('role') != 'Admin':
+        return redirect_forbidden()
+
+    ensure_notices_table()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''UPDATE Notices
+                      SET is_pinned = CASE WHEN is_pinned = TRUE THEN FALSE ELSE TRUE END
+                      WHERE id = %s''', (id,))
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        flash('Notice not found.', 'error')
+    else:
+        flash('Notice pin status updated.', 'success')
+
+    cursor.close()
+    conn.close()
+    return redirect(url_for('admin_notices'))
+
+
+@app.route('/admin/notices/delete/<int:id>', methods=['POST'])
+def admin_delete_notice(id):
+    if session.get('role') != 'Admin':
+        return redirect_forbidden()
+
+    ensure_notices_table()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM Notices WHERE id = %s', (id,))
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        flash('Notice not found.', 'error')
+    else:
+        flash('Notice deleted.', 'success')
+
+    cursor.close()
+    conn.close()
+    return redirect(url_for('admin_notices'))
 
 
 @app.route('/student')
@@ -676,6 +1055,12 @@ def student_order_food():
                            (student_id, total_amount))
 
             conn.commit()
+
+            create_role_notifications(
+                ['Admin'],
+                f'{session["full_name"]} placed a food order worth Tk {total_amount:.2f}.'
+            )
+
             flash('Food ordered successfully! Payment added to pending dues.', 'success')
             return redirect(url_for('student_my_orders'))
         except Exception as e:
@@ -735,6 +1120,22 @@ def student_complaints():
         cursor.execute('INSERT INTO Complaints (student_id, room_id, description, is_anonymous) VALUES (%s, %s, %s, %s)',
                        (student_id, room_id, description, is_anonymous))
         conn.commit()
+
+        create_role_notifications(
+            ['Admin'],
+            f'New complaint submitted by {session["full_name"]}.'
+        )
+
+        if room_id:
+            cursor.execute(
+                'SELECT teacher_id, room_number FROM Rooms WHERE id = %s', (room_id,))
+            room_info = cursor.fetchone()
+            if room_info and room_info.get('teacher_id'):
+                create_notification(
+                    room_info['teacher_id'],
+                    f'New complaint from room {room_info["room_number"]} requires review.'
+                )
+
         flash('Complaint submitted successfully.', 'success')
         return redirect(url_for('student_complaints'))
 
@@ -769,6 +1170,23 @@ def student_maintenance():
                 cursor.execute('INSERT INTO Maintenance_Requests (student_id, room_id, issue) VALUES (%s, %s, %s)',
                                (student_id, room['room_id'], issue))
                 conn.commit()
+
+                create_role_notifications(
+                    ['Admin'],
+                    f'New maintenance request submitted by {session["full_name"]}.'
+                )
+
+                cursor.execute(
+                    'SELECT teacher_id, room_number FROM Rooms WHERE id = %s',
+                    (room['room_id'],)
+                )
+                room_info = cursor.fetchone()
+                if room_info and room_info.get('teacher_id'):
+                    create_notification(
+                        room_info['teacher_id'],
+                        f'New maintenance request from room {room_info["room_number"]}.'
+                    )
+
                 flash('Maintenance request submitted.', 'success')
 
             return redirect(url_for('student_maintenance'))
@@ -838,6 +1256,12 @@ def pay_hall_fee(id):
             (student_id, fee['amount'])
         )
         conn.commit()
+
+        create_role_notifications(
+            ['Admin'],
+            f'{session["full_name"]} paid hall fee of Tk {float(fee["amount"]):.2f}.'
+        )
+
         flash('Hall fee payment successful!', 'success')
 
     cursor.close()
@@ -891,6 +1315,12 @@ def pay_amount(id):
     cursor.execute(
         "UPDATE Payments SET status='Paid' WHERE id=%s AND student_id=%s", (id, student_id))
     conn.commit()
+
+    create_role_notifications(
+        ['Admin'],
+        f'{session["full_name"]} paid a pending meal due.'
+    )
+
     conn.close()
     flash('Payment marked as paid (cash).', 'success')
     return redirect(url_for('student_payments'))
@@ -1009,6 +1439,20 @@ def teacher_update_complaint(id):
     teacher_id = session['user_id']
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    cursor.execute('''SELECT c.student_id
+                      FROM Complaints c
+                      JOIN Rooms r ON c.room_id = r.id
+                      WHERE c.id = %s AND r.teacher_id = %s''',
+                   (id, teacher_id))
+    complaint = cursor.fetchone()
+
+    if not complaint:
+        flash('You are not allowed to update this complaint.', 'error')
+        cursor.close()
+        conn.close()
+        return redirect(url_for('teacher_complaints'))
+
     cursor.execute('''UPDATE Complaints
                       SET status='Reviewed'
                       WHERE id = %s
@@ -1022,6 +1466,13 @@ def teacher_update_complaint(id):
         return redirect(url_for('teacher_complaints'))
 
     conn.commit()
+
+    if complaint.get('student_id'):
+        create_notification(
+            complaint['student_id'],
+            'Your complaint has been reviewed by your assigned teacher.'
+        )
+
     flash('Complaint marked as reviewed.', 'success')
     cursor.close()
     conn.close()
