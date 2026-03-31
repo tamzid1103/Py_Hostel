@@ -76,12 +76,13 @@
                 {% endif %}
             </td>
             <td style="padding:15px;">Tk {{ food.price }}</td>
-            <td style="padding:15px;">
-                <form action="{{ url_for('delete_food', id=food.id) }}" method="POST"
-                    onsubmit="return confirm('Delete this food item?');" style="display:inline;">
-                    <button type="submit" class="text-danger"
-                        style="background:none; border:none; padding:0; cursor:pointer; text-decoration:none;">Delete</button>
-                </form>
+            <td style="padding:15px;" class="food-action-cell">
+                <div class="action-buttons">
+                    <form action="{{ url_for('delete_food', id=food.id) }}" method="POST" class="inline-action-form"
+                        onsubmit="return confirm('Delete this food item?');">
+                        <button type="submit" class="btn btn-danger food-delete-btn">Delete</button>
+                    </form>
+                </div>
             </td>
         </tr>
         {% else %}

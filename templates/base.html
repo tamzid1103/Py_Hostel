@@ -24,7 +24,7 @@
         </ul>
         <div class="sidebar-footer"
             style="padding: 20px; text-align: center; color: rgba(255,255,255,0.4); font-size: 12px; margin-top: auto;">
-            v1.0.0
+            v1.2.1
         </div>
     </div>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -47,7 +47,7 @@
                 <div class="user-info">
                     <div class="user-avatar">{{ session['full_name'][0] | upper }}</div>
                     <div class="user-details">
-                        <span class="user-name">{{ session['full_name'] }}</span>
+                        <span class="user-name" title="{{ session['full_name'] }}">{{ session['full_name'] }}</span>
                         <span class="user-role">{{ session['role'] }}</span>
                     </div>
                 </div>
