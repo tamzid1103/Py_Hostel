@@ -561,6 +561,45 @@ table tr:hover {
     background-color: var(--bg-main);
 }
 
+/* Handle legacy inline light styles so dark mode remains readable on table-heavy pages */
+html[data-theme='dark'] .content .form-container[style*="background:#fff"],
+html[data-theme='dark'] .content table[style*="background:#fff"] {
+    background: var(--surface-strong) !important;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+}
+
+html[data-theme='dark'] .content table[style*="background:#fff"] tbody tr[style*="border-bottom:1px solid #eee"] {
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+html[data-theme='dark'] .content table[style*="background:#fff"] tbody td,
+html[data-theme='dark'] .content table[style*="background:#fff"] tbody td[style] {
+    color: var(--text-main) !important;
+}
+
+html[data-theme='dark'] .content table[style*="background:#fff"] thead,
+html[data-theme='dark'] .content table[style*="background:#fff"] thead th {
+    border-color: var(--border-color) !important;
+}
+
+html[data-theme='dark'] .content table[style*="background:#fff"] a[style*="color:#3498db"],
+html[data-theme='dark'] .content table[style*="background:#fff"] summary[style*="color:#2980b9"],
+html[data-theme='dark'] .content [style*="color:#2980b9"],
+html[data-theme='dark'] .content [style*="color:#3498db"] {
+    color: #93c5fd !important;
+}
+
+html[data-theme='dark'] .content [style*="color:#7f8c8d"] {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme='dark'] .content [style*="background:#f8f9fa"] {
+    background: rgba(15, 23, 42, 0.72) !important;
+    color: var(--text-main) !important;
+    border-left-color: #93c5fd !important;
+}
+
 form {
     background: var(--bg-card);
     backdrop-filter: var(--glass-blur);
