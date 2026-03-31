@@ -19,7 +19,7 @@
     .contacts {
         width: 30%;
         border-right: 1px solid var(--border-color);
-        background: rgba(0,0,0,0.05);
+        background: rgba(0, 0, 0, 0.05);
         overflow-y: auto;
         display: flex;
         flex-direction: column;
@@ -33,7 +33,7 @@
     }
 
     .contact-item:hover {
-        background: rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.1);
     }
 
     .contact-item.active {
@@ -53,13 +53,20 @@
         flex: 1;
         padding: 20px;
         overflow-y: auto;
-        background: rgba(255,255,255,0.02);
+        background: rgba(255, 255, 255, 0.02);
         display: flex;
         flex-direction: column;
         gap: 10px;
     }
-    .messages::-webkit-scrollbar { width: 6px; }
-    .messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+    .messages::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+    }
 
     .message {
         padding: 10px 15px;
@@ -77,11 +84,11 @@
     }
 
     .message.received {
-        background: rgba(255,255,255,0.15);
+        background: rgba(255, 255, 255, 0.15);
         color: var(--text-main);
         align-self: flex-start;
         border-bottom-left-radius: 2px;
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .msg-time {
@@ -97,7 +104,7 @@
         border-top: 1px solid var(--border-color);
         display: flex;
         gap: 10px;
-        background: rgba(0,0,0,0.1);
+        background: rgba(0, 0, 0, 0.1);
     }
 
     .chat-input input {
@@ -106,11 +113,14 @@
         border: 1px solid var(--border-color);
         border-radius: 20px;
         outline: none;
-        background: rgba(255,255,255,0.05);
+        background: rgba(255, 255, 255, 0.05);
         color: var(--text-main);
         font-family: inherit;
     }
-    .chat-input input::placeholder { color: var(--text-muted); }
+
+    .chat-input input::placeholder {
+        color: var(--text-muted);
+    }
 
     .chat-input button {
         padding: 10px 24px;
@@ -123,7 +133,11 @@
         transition: var(--transition);
         box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
     }
-    .chat-input button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4); }
+
+    .chat-input button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+    }
 
     @media screen and (max-width: 768px) {
         .chat-container {
@@ -146,19 +160,22 @@
         .message {
             max-width: 85%;
         }
+
         .contacts {
             border-right: none;
             border-bottom: 1px solid var(--border-color);
         }
-        }
     }
 </style>
 
-<div class="chat-container">
+<div class="chat-container" id="chat-container" data-current-user-id="{{ session['user_id'] }}">
     <div class="contacts">
-        <div style="padding: 20px 15px; margin: 0; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 16px; color: var(--text-main); display: flex; align-items: center; gap: 10px;"><div style="width:8px; height:8px; background:var(--primary); border-radius:50%;"></div> Contacts</div>
+        <div
+            style="padding: 20px 15px; margin: 0; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 16px; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+            <div style="width:8px; height:8px; background:var(--primary); border-radius:50%;"></div> Contacts
+        </div>
         {% for c in contacts %}
-        <div class="contact-item" data-id="{{ c.id }}" onclick="selectContact({{ c.id }}, '{{ c.name }}', this)">
+        <div class="contact-item" data-id="{{ c.id }}" data-name="{{ c.name|e }}">
             <strong style="color: inherit; display: block; font-size: 15px;">{{ c.name }}</strong>
             <div style="font-size: 12px; opacity: 0.8; margin-top: 4px; color: inherit;">{{ c.info }}</div>
         </div>
@@ -168,7 +185,10 @@
     </div>
 
     <div class="chat-area">
-        <div style="padding: 20px 25px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.05); color: var(--text-main); display: flex; align-items: center; gap: 10px;"><div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; font-weight:bold;" id="chat-avatar">#</div>
+        <div
+            style="padding: 20px 25px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.05); color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+            <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; font-weight:bold;"
+                id="chat-avatar">#</div>
             <strong id="chat-header">Select a contact to start messaging</strong>
         </div>
 
@@ -186,7 +206,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
     const socket = io();
-    const currentUserId = {{ session['user_id'] }};
+    const chatContainer = document.getElementById('chat-container');
+    const currentUserId = Number((chatContainer && chatContainer.dataset.currentUserId) || 0);
     let activeReceiverId = null;
 
     socket.on('connect', () => {
@@ -199,6 +220,14 @@
             (data.sender_id === currentUserId && data.receiver_id === activeReceiverId)) {
             appendMessage(data);
         }
+    });
+
+    document.querySelectorAll('.contact-item').forEach((item) => {
+        item.addEventListener('click', () => {
+            const id = Number(item.dataset.id);
+            const name = item.dataset.name || 'Unknown';
+            selectContact(id, name, item);
+        });
     });
 
     function selectContact(id, name, el) {

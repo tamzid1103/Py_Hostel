@@ -5,6 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NASA_Home - {% block title %}{% endblock %}</title>
+    <script>
+        (function () {
+            try {
+                var savedTheme = localStorage.getItem('theme-preference');
+                var theme = (savedTheme === 'dark' || savedTheme === 'light')
+                    ? savedTheme
+                    : ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (error) {
+                // Ignore storage errors and keep default theme.
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
@@ -36,6 +50,10 @@
                 <span></span>
             </button>
             <div class="header-tools">
+                <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch theme">
+                    <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+                </button>
+
                 <button class="notification-toggle" id="notificationToggle" aria-label="Open alerts center">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M15 17H9M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8z" stroke="currentColor"
@@ -100,6 +118,7 @@
         <div class="notification-list hidden" id="noticesList"></div>
     </aside>
 
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 

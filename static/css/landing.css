@@ -795,3 +795,47 @@ main {
         padding: 24px 0;
     }
 }
+
+html[data-theme='dark'] .landing-nav {
+    background: rgba(2, 6, 23, 0.72);
+}
+
+html[data-theme='dark'] .landing-footer {
+    background: rgba(2, 6, 23, 0.62);
+}
+
+html[data-theme='dark'] .landing-page .btn-ghost {
+    background: rgba(15, 23, 42, 0.62);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: var(--text-main);
+}
+
+html[data-theme='dark'] .landing-page .btn-ghost:hover {
+    background: rgba(30, 41, 59, 0.75);
+}
+
+html[data-theme='dark'] .landing-orb-1 {
+    background: radial-gradient(circle at 40% 40%, rgba(129, 140, 248, 0.2), rgba(56, 189, 248, 0.05));
+}
+
+html[data-theme='dark'] .landing-orb-2 {
+    background: radial-gradient(circle at 60% 40%, rgba(59, 130, 246, 0.18), rgba(16, 185, 129, 0.04));
+}
+
+html[data-theme='dark'] .snippet-window {
+    border-color: rgba(148, 163, 184, 0.3);
+    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.16);
+}
+
+html[data-theme='dark'] .snippet-ui {
+    border-color: rgba(148, 163, 184, 0.3);
+    background: rgba(15, 23, 42, 0.56);
+}
+
+html[data-theme='dark'] .ui-line,
+html[data-theme='dark'] .table-row,
+html[data-theme='dark'] .issue-line,
+html[data-theme='dark'] .chat-input,
+html[data-theme='dark'] .pay-progress {
+    background: rgba(148, 163, 184, 0.2);
+}

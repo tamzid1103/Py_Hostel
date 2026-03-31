@@ -10,12 +10,20 @@ from functools import wraps
 
 load_dotenv()
 
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if os.environ.get('RENDER'):
+        raise RuntimeError(
+            'SECRET_KEY environment variable is required on Render.')
+    SECRET_KEY = os.urandom(32).hex()
+
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'default_secret_key')
+app.secret_key = SECRET_KEY
 socketio = SocketIO(app)
 
 VALID_MAINTENANCE_STATUSES = ['Pending', 'In Progress', 'Resolved']
 VALID_NOTICE_TARGET_ROLES = ['All', 'Admin', 'Student', 'Teacher']
+VALID_FOOD_CATEGORIES = ['Non-Veg', 'Veg']
 
 # Database connection details
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
@@ -339,7 +347,11 @@ def register():
 
         if role == 'Admin':
             admin_secret = request.form.get('admin_secret')
-            if admin_secret != os.environ.get('ADMIN_SECRET', 'secure@209'):
+            configured_admin_secret = os.environ.get('ADMIN_SECRET')
+            if not configured_admin_secret:
+                flash('Admin registration is not configured on this server.', 'error')
+                return redirect(url_for('register'))
+            if admin_secret != configured_admin_secret:
                 flash('Invalid admin secret code!', 'error')
                 return redirect(url_for('register'))
 
@@ -509,6 +521,9 @@ def admin_food():
         name = request.form['name']
         category = request.form['category']
         price = request.form['price']
+        if category not in VALID_FOOD_CATEGORIES:
+            flash('Invalid food category selected.', 'error')
+            return redirect(url_for('admin_food'))
         try:
             cursor.execute('INSERT INTO Food_Items (name, category, price) VALUES (%s, %s, %s)',
                            (name, category, price))
@@ -1348,10 +1363,9 @@ def download_receipt(id):
     # Needs wkhtmltopdf installed on system for pdfkit to work!
     # For demo purposes we can attempt to generate it or return HTML that looks like a PDF if not installed
     try:
-        # IMPORTANT: Replace the path below with the exact path where you installed wkhtmltopdf
-        # Usually it is something like r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-        path_wkhtmltopdf = r'D:\WKhtmltoPDF\wkhtmltopdf\bin\wkhtmltopdf.exe'
-        config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+        wkhtmltopdf_path = os.environ.get('WKHTMLTOPDF_PATH')
+        config = pdfkit.configuration(
+            wkhtmltopdf=wkhtmltopdf_path) if wkhtmltopdf_path else None
 
         pdf_options = {
             'page-size': 'A4',
@@ -1369,7 +1383,7 @@ def download_receipt(id):
         return response
     except Exception as e:
         print(f"PDF generation error: {e}")
-        flash('PDF Generation failed. Please install wkhtmltopdf on your system.')
+        flash('PDF generation failed. Install wkhtmltopdf and set WKHTMLTOPDF_PATH on the server.', 'error')
         return redirect(url_for('student_payments'))
 
 
