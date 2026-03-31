@@ -1495,6 +1495,12 @@ def student_reading_room():
             cursor.execute('''INSERT INTO Reading_Room_Bookings (student_id, booking_date, time_slot)
                               VALUES (%s, %s, %s)''', (student_id, booking_date, time_slot))
             conn.commit()
+
+            create_role_notifications(
+                ['Admin'],
+                f'{session["full_name"]} booked reading room on {booking_date} ({time_slot}).'
+            )
+
             flash('Reading room booked successfully!', 'success')
         except Exception:
             flash('Slot already booked or invalid request.', 'error')

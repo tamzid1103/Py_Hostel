@@ -13,6 +13,7 @@ The Admin acts as the ultimate supervisor and manager of the hostel system.
 - **Oversight & Moderation:** 
   - Manage and review student complaints.
   - Review and update maintenance requests (Pending, In Progress, Resolved).
+  - Publish role-based Notice Board announcements from a dedicated admin panel.
   - View all student food orders and system-wide stats.
 
 ### 2. Teacher
@@ -20,6 +21,7 @@ A Teacher serves as a block/room supervisor, ensuring discipline and addressing 
 - **Room Monitoring:** View details of rooms assigned to them, including the occupancy and the students residing there.
 - **Complaint Handling:** Review and resolve complaints specific to their assigned rooms. Features an expandable drop-down for reading lengthy complaints clearly.
 - **Direct Communication:** Interact directly with students under their supervision via a real-time Chat System.
+- **Live Alerts:** Receive role-based notifications for complaint and maintenance activities in the Alerts Center.
 
 ### 3. Student
 Students are the primary consumers of the system's utilities.
@@ -29,6 +31,13 @@ Students are the primary consumers of the system's utilities.
 - **Complaints & Maintenance:** Transparently file complaints (with an option to remain anonymous) and request room maintenance directly to the admins/teachers.
 - **Reading Room Booking:** Book hourly slots in the hostel’s communal reading room to reserve a study space.
 - **Real-time Chatting:** Chat directly (real-time) with their assigned teacher regarding any disputes or issues using the integrated Socket.IO interface.
+- **Alerts Center:** View personal notifications and shared Notice Board updates in a unified panel.
+
+### 4. Shared Notification & Notice Board
+- **Alerts Center Panel:** Available across authenticated pages for Admin, Teacher, and Student.
+- **Personal Notifications:** Tracks role-specific operational updates like assignments, complaint reviews, maintenance status, and payment events.
+- **Notice Board Feed:** Displays admin-published announcements filtered by role target (`All`, `Admin`, `Teacher`, `Student`).
+- **Read Management:** Users can mark single notifications or all notifications as read.
 
 ---
 

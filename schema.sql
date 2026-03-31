@@ -94,6 +94,9 @@ CREATE TABLE Notifications (
     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
 );
 
+CREATE INDEX idx_notifications_user_read_created
+ON Notifications (user_id, is_read, created_at);
+
 CREATE TABLE Notices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -106,6 +109,12 @@ CREATE TABLE Notices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES Users(id) ON DELETE SET NULL
 );
+
+CREATE INDEX idx_notices_visibility
+ON Notices (is_active, target_role, is_pinned, created_at);
+
+CREATE INDEX idx_notices_expires
+ON Notices (expires_at);
 
 CREATE TABLE Reading_Room_Bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
